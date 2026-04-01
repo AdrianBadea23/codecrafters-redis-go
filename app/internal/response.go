@@ -56,9 +56,10 @@ func HandleConnection(conn net.Conn) {
 
 			if strings.EqualFold(tokens[0], GET) {
 				val := keyValue[tokens[1]]
-				ttl := keyTimetable[tokens[1]] - time.Now().UnixMilli()
+				pttl, ok := keyTimetable[tokens[1]]
+				ttl := pttl - time.Now().UnixMilli()
 
-				if ttl <= 0 {
+				if ok && ttl <= 0 {
 					writer.WriteString(NULL_BULK_STRING)
 					writer.Flush()
 				} else {
