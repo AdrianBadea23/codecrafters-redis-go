@@ -9,12 +9,23 @@ import (
 func HandleConnection(conn net.Conn) {
 
 	for {
-		_, err := bufio.NewReader(conn).ReadString('\n')
+		command, err := bufio.NewReader(conn).ReadString('\n')
 		if err != nil {
 			log.Println("Error reading fron conn")
 		}
 
-		conn.Write([]byte("+PONG\r\n"))
+		tokens := arrayParser(command)
+		writer := bufio.NewWriter(conn)
+
+		if tokens[0] == "ECHO" {
+			writer.WriteString("$")
+			writer.WriteString(string(len(tokens[1])))
+			writer.WriteString("\r\n")
+			writer.WriteString(tokens[1])
+			writer.WriteString("\r\n")
+			writer.Flush()
+		}
+
 	}
 
 }
