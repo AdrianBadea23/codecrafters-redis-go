@@ -7,6 +7,10 @@ import (
 	"strings"
 )
 
+const ECHO = "ECHO"
+const PING = "PING"
+const PONG = "+PONG\r\n"
+
 func HandleConnection(conn net.Conn) {
 
 	for {
@@ -18,15 +22,15 @@ func HandleConnection(conn net.Conn) {
 			tokens := arrayParser(recv)
 			writer := bufio.NewWriter(conn)
 
-			if strings.EqualFold(tokens[0], "ECHO") {
+			if strings.EqualFold(tokens[0], ECHO) {
 				writer.WriteString("$")
 				writer.WriteString(strconv.Itoa(len(tokens[1])))
 				writer.WriteString("\r\n")
 				writer.WriteString(tokens[1])
 				writer.WriteString("\r\n")
 				writer.Flush()
-			} else if strings.EqualFold(tokens[0], "PING") {
-				writer.WriteString("+PONG\r\n")
+			} else if strings.EqualFold(tokens[0], PING) {
+				writer.WriteString(PONG)
 				writer.Flush()
 			}
 
@@ -34,8 +38,8 @@ func HandleConnection(conn net.Conn) {
 			myString := parseString(recv)
 			writer := bufio.NewWriter(conn)
 
-			if strings.EqualFold(myString, "PING") {
-				writer.WriteString("+PONG\r\n")
+			if strings.EqualFold(myString, PING) {
+				writer.WriteString(PONG)
 				writer.Flush()
 			}
 		}
