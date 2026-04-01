@@ -13,7 +13,7 @@ func bulkString(reader *bufio.Reader) string {
 		panic("problem with data type")
 	}
 
-	number, _ := reader.ReadByte()
+	number, _ := reader.ReadString(byte('\r'))
 
 	length, _ := strconv.ParseInt(string(number), 10, 64)
 	reader.ReadByte()
@@ -30,7 +30,7 @@ func arrayParser(input string) []string {
 	reader := bufio.NewReader(strings.NewReader(input))
 	reader.ReadByte() // expect *
 
-	num, _ := reader.ReadByte()
+	num, _ := reader.ReadString(byte('\r'))
 	numInteger, _ := strconv.Atoi(string(num))
 	args := make([]string, numInteger)
 

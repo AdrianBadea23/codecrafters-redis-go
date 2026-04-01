@@ -26,6 +26,11 @@ func HandleConnection(conn net.Conn) {
 			writer.Flush()
 		}
 
+		if tokens[0] == "PING" {
+			writer.WriteString("+PONG\r\n")
+			writer.Flush()
+		}
+
 	}
 
 }
