@@ -9,7 +9,11 @@ import (
 
 const ECHO = "ECHO"
 const PING = "PING"
+const SET = "SET"
+const GET = "GET"
+
 const PONG = "+PONG\r\n"
+const OK = "+OK\r\n"
 
 func HandleConnection(conn net.Conn) {
 
@@ -29,7 +33,9 @@ func HandleConnection(conn net.Conn) {
 				writer.WriteString(tokens[1])
 				writer.WriteString("\r\n")
 				writer.Flush()
-			} else if strings.EqualFold(tokens[0], PING) {
+			}
+
+			if strings.EqualFold(tokens[0], PING) {
 				writer.WriteString(PONG)
 				writer.Flush()
 			}
