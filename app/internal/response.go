@@ -45,7 +45,7 @@ func HandleConnection(conn net.Conn) {
 			if strings.EqualFold(tokens[0], SET) {
 				keyValue[tokens[1]] = tokens[2]
 
-				if strings.EqualFold(tokens[3], PX) {
+				if len(tokens) > 3 && strings.EqualFold(tokens[3], PX) {
 					milisecondsToEnd, _ := strconv.ParseInt(tokens[4], 10, 64)
 					keyTimetable[tokens[1]] = time.Now().Add(time.Duration(milisecondsToEnd) * time.Millisecond).UnixMilli()
 				}
