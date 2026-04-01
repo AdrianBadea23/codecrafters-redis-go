@@ -14,14 +14,14 @@ func bulkString(reader *bufio.Reader) string {
 	}
 
 	for {
-		aux, _ := reader.ReadByte()
+		t, _ := reader.ReadByte()
 
-		if aux == '\r' {
+		if t == '\r' {
 			reader.ReadByte()
 			break
 		}
 
-		length = length*10 + int(aux)
+		length = length*10 + int(t-'0')
 	}
 
 	buff := make([]byte, length)
@@ -48,7 +48,7 @@ func arrayParser(reader *bufio.Reader) []string {
 			break
 		}
 
-		numInteger = numInteger*10 + int(t)
+		numInteger = numInteger*10 + int(t-'0')
 	}
 
 	args := make([]string, numInteger)

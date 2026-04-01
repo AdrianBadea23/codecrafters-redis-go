@@ -3,6 +3,7 @@ package internal
 import (
 	"bufio"
 	"net"
+	"strconv"
 	"strings"
 )
 
@@ -19,10 +20,13 @@ func HandleConnection(conn net.Conn) {
 
 			if strings.EqualFold(tokens[0], "ECHO") {
 				writer.WriteString("$")
-				writer.WriteString(string(len(tokens[1])))
+				writer.WriteString(strconv.Itoa(len(tokens[1])))
 				writer.WriteString("\r\n")
 				writer.WriteString(tokens[1])
 				writer.WriteString("\r\n")
+				writer.Flush()
+			} else if strings.EqualFold(tokens[0], "PING") {
+				writer.WriteString("+PONG\r\n")
 				writer.Flush()
 			}
 
