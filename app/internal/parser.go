@@ -2,49 +2,56 @@ package internal
 
 import (
 	"bufio"
-	"strconv"
-	"strings"
+	"io"
 )
 
 func bulkString(reader *bufio.Reader) string {
+	length := 0
 	b, _ := reader.ReadByte()
 
 	if b != '$' {
 		panic("problem with data type")
 	}
 
-	number, _ := reader.ReadString(byte('\r'))
-	number = number[:len(number)-1]
+	for {
+		aux, _ := reader.ReadByte()
 
-	length, _ := strconv.ParseInt(string(number), 10, 64)
-	reader.ReadByte()
-	reader.ReadByte()
+		if aux == '\r' {
+			reader.ReadByte()
+			break
+		}
+
+		length = length*10 + int(aux)
+	}
 
 	buff := make([]byte, length)
-	reader.Read(buff)
+	io.ReadFull(reader, buff)
 	reader.ReadByte()
 	reader.ReadByte()
 	return string(buff)
 }
 
-func parseString(input string) string {
-	reader := bufio.NewReader(strings.NewReader(input))
+func parseString(reader *bufio.Reader) string {
 	reader.ReadByte() // expect +
 	fin, _ := reader.ReadString('\r')
 	return fin[:len(fin)-1]
 }
 
-func arrayParser(input string) []string {
-	reader := bufio.NewReader(strings.NewReader(input))
-	reader.ReadByte() // expect *
+func arrayParser(reader *bufio.Reader) []string {
+	numInteger := 0
 
-	num, _ := reader.ReadString(byte('\r'))
-	num = num[:len(num)-1]
-	numInteger, _ := strconv.Atoi(string(num))
+	for {
+		t, _ := reader.ReadByte()
+
+		if t == '\r' {
+			reader.ReadByte() // get rid of \n
+			break
+		}
+
+		numInteger = numInteger*10 + int(t)
+	}
+
 	args := make([]string, numInteger)
-
-	reader.ReadByte() // expect \r
-	reader.ReadByte() // expect \n
 
 	for i := range numInteger {
 		aux := bulkString(reader)

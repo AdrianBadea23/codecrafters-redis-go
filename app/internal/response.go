@@ -2,44 +2,19 @@ package internal
 
 import (
 	"bufio"
-	"log"
 	"net"
-	"strconv"
 	"strings"
 )
 
 func HandleConnection(conn net.Conn) {
 
 	for {
-		recv, err := bufio.NewReader(conn).ReadString('\n')
-		if err != nil {
-			log.Println("Error reading fron conn")
-		}
-
-		var sb strings.Builder
-		sb.WriteString(recv)
-
-		if recv[0] == '*' {
-			specLen, err := strconv.Atoi(recv[1 : len(recv)-2])
-
-			if err != nil {
-				log.Println("error with conversion")
-			}
-
-			for range specLen {
-				chunk, _ := bufio.NewReader(conn).ReadString('\n')
-				sb.WriteString(chunk)
-			}
-		}
-
-		command := sb.String()
-		reader := bufio.NewReader(strings.NewReader(command))
-
-		firstToken, _ := reader.ReadByte()
+		recv := bufio.NewReader(conn)
+		firstToken, _ := recv.ReadByte()
 
 		switch firstToken {
 		case '*':
-			tokens := arrayParser(command)
+			tokens := arrayParser(recv)
 			writer := bufio.NewWriter(conn)
 
 			if strings.EqualFold(tokens[0], "ECHO") {
@@ -52,7 +27,7 @@ func HandleConnection(conn net.Conn) {
 			}
 
 		case '+':
-			myString := parseString(command)
+			myString := parseString(recv)
 			writer := bufio.NewWriter(conn)
 
 			if strings.EqualFold(myString, "PING") {
