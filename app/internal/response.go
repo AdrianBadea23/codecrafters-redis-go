@@ -8,10 +8,13 @@ import (
 
 func HandleConnection(conn net.Conn) {
 
-	_, err := bufio.NewReader(conn).ReadString('\n')
-	if err != nil {
-		log.Println("Error reading fron conn")
+	for {
+		_, err := bufio.NewReader(conn).ReadString('\n')
+		if err != nil {
+			log.Println("Error reading fron conn")
+		}
+
+		conn.Write([]byte("+PONG\r\n"))
 	}
 
-	conn.Write([]byte("+PONG\r\n"))
 }
