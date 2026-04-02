@@ -120,7 +120,7 @@ func preAddToListGrid(listGrid map[string]any, tokens []string) int {
 	} else {
 		slice := listGrid[tokens[1]].([]string)
 		for i := len(tokens) - 1; i > 1; i-- {
-			slice = append(slice, tokens[i])
+			slice = append([]string{tokens[i]}, slice...)
 		}
 		listGrid[tokens[1]] = slice
 		return len(slice)
