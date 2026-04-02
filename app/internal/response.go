@@ -50,11 +50,11 @@ func getRangeFromList(listGrid map[string]any, sliceName string, start, stop int
 	length := len(slice)
 
 	if start < 0 {
-		normalizeIndex(start, length)
+		start = normalizeIndex(start, length)
 	}
 
 	if stop < 0 {
-		normalizeIndex(stop, length)
+		stop = normalizeIndex(stop, length)
 	}
 
 	if start > length {
