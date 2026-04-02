@@ -2,7 +2,6 @@ package internal
 
 import (
 	"bufio"
-	"fmt"
 	"net"
 	"strconv"
 	"strings"
@@ -31,10 +30,12 @@ const (
 
 func getRangeFromList(listGrid map[string]any, sliceName string, start, stop int) []string {
 	slice, ok := listGrid[sliceName].([]string)
-	length := len(slice)
+
 	if !ok {
 		return []string{}
 	}
+
+	length := len(slice)
 
 	if start > length {
 		return []string{}
@@ -114,13 +115,18 @@ func HandleConnection(conn net.Conn) {
 
 			if strings.EqualFold(tokens[0], LRANGE) {
 				name := tokens[1]
-				start, _ := strconv.Atoi(tokens[1])
-				stop, _ := strconv.Atoi(tokens[2])
+				start, _ := strconv.Atoi(tokens[2])
+				stop, _ := strconv.Atoi(tokens[3])
 				slice := getRangeFromList(listGrid, name, start, stop)
-				fmt.Println(slice)
-				message := buildArrayString(slice)
-				writer.WriteString(message)
-				writer.Flush()
+				if len(slice) == 0 {
+					writer.WriteString(EMPTY_ARRAY)
+					writer.Flush()
+				} else {
+					message := buildArrayString(slice)
+					writer.WriteString(message)
+					writer.Flush()
+				}
+
 			}
 
 			if strings.EqualFold(tokens[0], RPUSH) {
