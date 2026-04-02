@@ -26,6 +26,7 @@ const (
 	PONG             = "+PONG\r\n"
 	OK               = "+OK\r\n"
 	NULL_BULK_STRING = "$-1\r\n"
+	NULL_ARRAY       = "*-1\r\n"
 	EMPTY_ARRAY      = "*0\r\n"
 	ZERO             = ":0\r\n"
 	RESP_DELIMITER   = "\r\n"
@@ -256,16 +257,40 @@ func HandleConnection(conn net.Conn, server *RedisServer) {
 					writer.WriteString(RESP_DELIMITER)
 					writer.Flush()
 				} else {
-					server.Mu.Lock()
-					channel := make(chan string, 1)
-					server.Channels[key] = append(server.Channels[key], channel)
-					server.Mu.Unlock()
-					<-channel
-					result := leftPop(server.Lists, key, 1)
-					result = append([]string{key}, result...)
-					message := buildArrayString(result)
-					writer.WriteString(message)
-					writer.Flush()
+
+					timeInSeconds, _ := strconv.ParseFloat(tokens[2], 64)
+
+					if timeInSeconds > 0 {
+						server.Mu.Lock()
+						channel := make(chan string, 1)
+						server.Channels[key] = append(server.Channels[key], channel)
+						server.Mu.Unlock()
+						ticker := time.NewTicker(time.Second * time.Duration(timeInSeconds))
+						select {
+						case <-channel:
+							result := leftPop(server.Lists, key, 1)
+							result = append([]string{key}, result...)
+							message := buildArrayString(result)
+							writer.WriteString(message)
+							writer.Flush()
+						case <-ticker.C:
+							writer.WriteString(NULL_ARRAY)
+							writer.Flush()
+						}
+
+					} else {
+						server.Mu.Lock()
+						channel := make(chan string, 1)
+						server.Channels[key] = append(server.Channels[key], channel)
+						server.Mu.Unlock()
+						<-channel
+						result := leftPop(server.Lists, key, 1)
+						result = append([]string{key}, result...)
+						message := buildArrayString(result)
+						writer.WriteString(message)
+						writer.Flush()
+					}
+
 				}
 			}
 
