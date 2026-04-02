@@ -21,6 +21,7 @@ const (
 	LRANGE = "LRANGE"
 	LLEN   = "LLEN"
 	LPOP   = "LPOP"
+	BLPOP  = "BLPOP"
 
 	PONG             = "+PONG\r\n"
 	OK               = "+OK\r\n"
@@ -90,24 +91,33 @@ func buildArrayString(slice []string) string {
 	return sb.String()
 }
 
-func addToListGrid(listGrid map[string]any, tokens []string) int {
+func addToListGrid(listGrid map[string]any, tokens []string, server *RedisServer) int {
 	_, ok := listGrid[tokens[1]]
+	name := tokens[1]
 
 	if !ok {
 		slice := make([]string, 0)
 		for i := 2; i < len(tokens); i++ {
 			slice = append(slice, tokens[i])
 		}
-		listGrid[tokens[1]] = slice // tokens[1] is the name given when inserting in the slice
+		listGrid[name] = slice // tokens[1] is the name given when inserting in the slice
+		channelsSlice := server.Channels[name]
+		if len(channelsSlice) > 0 {
+			channelsSlice[0] <- slice[0]
+			channelsSlice = channelsSlice[1:]
+			server.Channels[name] = append(server.Channels[name], channelsSlice...)
+		}
+
 		return len(slice)
 	} else {
-		slice := listGrid[tokens[1]].([]string)
+		slice := listGrid[name].([]string)
 		for i := 2; i < len(tokens); i++ {
 			slice = append(slice, tokens[i])
 		}
-		listGrid[tokens[1]] = slice
+		listGrid[name] = slice
 		return len(slice)
 	}
+
 }
 
 func preAddToListGrid(listGrid map[string]any, tokens []string) int {
@@ -177,7 +187,7 @@ func HandleConnection(conn net.Conn, server *RedisServer) {
 			}
 
 			if strings.EqualFold(tokens[0], RPUSH) {
-				length := addToListGrid(server.Lists, tokens)
+				length := addToListGrid(server.Lists, tokens, server)
 				writer.WriteString(INTEGER)
 				writer.WriteString(strconv.Itoa(length))
 				writer.WriteString(RESP_DELIMITER)
@@ -226,6 +236,31 @@ func HandleConnection(conn net.Conn, server *RedisServer) {
 				} else if len(tokens) == 3 {
 					elements, _ := strconv.Atoi(tokens[2])
 					result := leftPop(server.Lists, name, elements)
+					message := buildArrayString(result)
+					writer.WriteString(message)
+					writer.Flush()
+				}
+			}
+
+			if strings.EqualFold(tokens[0], BLPOP) {
+				key := tokens[1]
+
+				if len(server.Lists[key].([]string)) > 0 {
+					result := leftPop(server.Lists, key, 1)
+					length := strconv.Itoa(len(result[0]))
+					writer.WriteString(BULK_STRING)
+					writer.WriteString(length)
+					writer.WriteString(RESP_DELIMITER)
+					writer.WriteString(result[0])
+					writer.WriteString(RESP_DELIMITER)
+					writer.Flush()
+				} else {
+					server.Mu.Lock()
+					channel := make(chan string, 1)
+					server.Channels[key] = append(server.Channels[key], channel)
+					server.Mu.Unlock()
+					<-channel
+					result := leftPop(server.Lists, key, 1)
 					message := buildArrayString(result)
 					writer.WriteString(message)
 					writer.Flush()
