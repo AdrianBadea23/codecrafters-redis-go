@@ -2,6 +2,7 @@ package internal
 
 import (
 	"bufio"
+	"fmt"
 	"net"
 	"strconv"
 	"strings"
@@ -176,6 +177,7 @@ func HandleConnection(conn net.Conn) {
 
 			if strings.EqualFold(tokens[0], LPUSH) {
 				length := preAddToListGrid(listGrid, tokens)
+				fmt.Println(listGrid[tokens[1]])
 				writer.WriteString(INTEGER)
 				writer.WriteString(strconv.Itoa(length))
 				writer.WriteString(RSVP_DELIMITER)
