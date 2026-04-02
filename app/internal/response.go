@@ -8,21 +8,42 @@ import (
 	"time"
 )
 
-const ECHO = "ECHO"
-const PING = "PING"
-const SET = "SET"
-const GET = "GET"
-const PX = "PX"
-const EX = "EX"
+const (
+	ECHO  = "ECHO"
+	PING  = "PING"
+	SET   = "SET"
+	GET   = "GET"
+	PX    = "PX"
+	EX    = "EX"
+	RPUSH = "RPUSH"
 
-const PONG = "+PONG\r\n"
-const OK = "+OK\r\n"
-const NULL_BULK_STRING = "$-1\r\n"
+	PONG             = "+PONG\r\n"
+	OK               = "+OK\r\n"
+	NULL_BULK_STRING = "$-1\r\n"
+	RSVP_DELIMITER   = "\r\n"
+	BULK_STRING      = "$"
+	INTEGER          = ":"
+)
+
+func addToListGrid(listGrid map[string]any, tokens []string) int {
+	_, ok := listGrid[tokens[1]]
+
+	if !ok {
+		listGrid[tokens[1]] = []string{tokens[2]}
+		return 1
+	} else {
+		slice := listGrid[tokens[1]].([]string)
+		slice = append(slice, tokens[2])
+		listGrid[tokens[1]] = slice
+		return len(slice)
+	}
+}
 
 func HandleConnection(conn net.Conn) {
 
 	keyValue := make(map[string]string)
 	keyTimetable := make(map[string]int64)
+	listGrid := make(map[string]any, 100)
 
 	for {
 		recv := bufio.NewReader(conn)
@@ -34,11 +55,19 @@ func HandleConnection(conn net.Conn) {
 			writer := bufio.NewWriter(conn)
 
 			if strings.EqualFold(tokens[0], ECHO) {
-				writer.WriteString("$")
+				writer.WriteString(BULK_STRING)
 				writer.WriteString(strconv.Itoa(len(tokens[1])))
-				writer.WriteString("\r\n")
+				writer.WriteString(RSVP_DELIMITER)
 				writer.WriteString(tokens[1])
-				writer.WriteString("\r\n")
+				writer.WriteString(RSVP_DELIMITER)
+				writer.Flush()
+			}
+
+			if strings.EqualFold(tokens[0], RPUSH) {
+				length := addToListGrid(listGrid, tokens)
+				writer.WriteString(INTEGER)
+				writer.WriteString(strconv.Itoa(length))
+				writer.WriteString(RSVP_DELIMITER)
 				writer.Flush()
 			}
 
@@ -63,11 +92,11 @@ func HandleConnection(conn net.Conn) {
 					writer.WriteString(NULL_BULK_STRING)
 					writer.Flush()
 				} else {
-					writer.WriteString("$")
+					writer.WriteString(BULK_STRING)
 					writer.WriteString(strconv.Itoa(len(val)))
-					writer.WriteString("\r\n")
+					writer.WriteString(RSVP_DELIMITER)
 					writer.WriteString(val)
-					writer.WriteString("\r\n")
+					writer.WriteString(RSVP_DELIMITER)
 					writer.Flush()
 				}
 
