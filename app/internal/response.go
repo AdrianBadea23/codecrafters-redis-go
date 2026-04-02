@@ -221,8 +221,10 @@ func HandleConnection(conn net.Conn) {
 
 				if len(tokens) == 2 {
 					result := leftPop(listGrid, name, 1)
-					message := buildArrayString(result)
-					writer.WriteString(message)
+					length := strconv.Itoa(len(result))
+					writer.WriteString(BULK_STRING)
+					writer.WriteString(length)
+					writer.WriteString(RSVP_DELIMITER)
 					writer.Flush()
 				} else if len(tokens) == 3 {
 					elements, _ := strconv.Atoi(tokens[2])
