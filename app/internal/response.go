@@ -20,6 +20,7 @@ const (
 	LPUSH  = "LPUSH"
 	LRANGE = "LRANGE"
 	LLEN   = "LLEN"
+	LPOP   = "LPOP"
 
 	PONG             = "+PONG\r\n"
 	OK               = "+OK\r\n"
@@ -129,6 +130,17 @@ func preAddToListGrid(listGrid map[string]any, tokens []string) int {
 	}
 }
 
+func leftPop(listGrid map[string]any, name string, elements int) []string {
+	slice, _ := listGrid[name].([]string)
+
+	sliceToKeep := slice[elements+1:]
+	sliceToDiscard := slice[:elements+1]
+
+	listGrid[name] = sliceToKeep
+
+	return sliceToDiscard
+}
+
 func HandleConnection(conn net.Conn) {
 
 	keyValue := make(map[string]string)
@@ -195,6 +207,28 @@ func HandleConnection(conn net.Conn) {
 					writer.WriteString(INTEGER)
 					writer.WriteString(strconv.Itoa(len(val)))
 					writer.WriteString(RSVP_DELIMITER)
+					writer.Flush()
+				}
+			}
+
+			if strings.EqualFold(tokens[0], LPOP) {
+				slice, ok := listGrid[tokens[1]].([]string)
+				name := tokens[1]
+				if !ok || len(slice) == 0 {
+					writer.WriteString(NULL_BULK_STRING)
+					writer.Flush()
+				}
+
+				if len(tokens) == 2 {
+					result := leftPop(listGrid, name, 1)
+					message := buildArrayString(result)
+					writer.WriteString(message)
+					writer.Flush()
+				} else if len(tokens) == 3 {
+					elements, _ := strconv.Atoi(tokens[2])
+					result := leftPop(listGrid, name, elements)
+					message := buildArrayString(result)
+					writer.WriteString(message)
 					writer.Flush()
 				}
 			}
