@@ -134,9 +134,7 @@ func leftPop(listGrid map[string]any, name string, elements int) []string {
 	slice, _ := listGrid[name].([]string)
 
 	sliceToKeep := slice[elements+1:]
-	sliceToDiscard := slice[:elements+1]
-	fmt.Println(sliceToDiscard)
-	fmt.Println(sliceToKeep)
+	sliceToDiscard := slice[:elements]
 	listGrid[name] = sliceToKeep
 
 	return sliceToDiscard
