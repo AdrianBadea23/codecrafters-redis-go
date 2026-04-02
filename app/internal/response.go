@@ -27,7 +27,7 @@ const (
 	NULL_BULK_STRING = "$-1\r\n"
 	EMPTY_ARRAY      = "*0\r\n"
 	ZERO             = ":0\r\n"
-	RSVP_DELIMITER   = "\r\n"
+	RESP_DELIMITER   = "\r\n"
 	BULK_STRING      = "$"
 	INTEGER          = ":"
 	ARRAY            = "*"
@@ -77,14 +77,14 @@ func buildArrayString(slice []string) string {
 	var sb strings.Builder
 	sb.WriteString(ARRAY)
 	sb.WriteString(strconv.Itoa(len(slice)))
-	sb.WriteString(RSVP_DELIMITER)
+	sb.WriteString(RESP_DELIMITER)
 
 	for _, val := range slice {
 		sb.WriteString(BULK_STRING)
 		sb.WriteString(strconv.Itoa(len(val)))
-		sb.WriteString(RSVP_DELIMITER)
+		sb.WriteString(RESP_DELIMITER)
 		sb.WriteString(val)
-		sb.WriteString(RSVP_DELIMITER)
+		sb.WriteString(RESP_DELIMITER)
 	}
 
 	return sb.String()
@@ -140,11 +140,7 @@ func leftPop(listGrid map[string]any, name string, elements int) []string {
 	return sliceToDiscard
 }
 
-func HandleConnection(conn net.Conn) {
-
-	keyValue := make(map[string]string)
-	keyTimetable := make(map[string]int64)
-	listGrid := make(map[string]any, 100)
+func HandleConnection(conn net.Conn, server *RedisServer) {
 
 	for {
 		recv := bufio.NewReader(conn)
@@ -158,9 +154,9 @@ func HandleConnection(conn net.Conn) {
 			if strings.EqualFold(tokens[0], ECHO) {
 				writer.WriteString(BULK_STRING)
 				writer.WriteString(strconv.Itoa(len(tokens[1])))
-				writer.WriteString(RSVP_DELIMITER)
+				writer.WriteString(RESP_DELIMITER)
 				writer.WriteString(tokens[1])
-				writer.WriteString(RSVP_DELIMITER)
+				writer.WriteString(RESP_DELIMITER)
 				writer.Flush()
 			}
 
@@ -168,7 +164,7 @@ func HandleConnection(conn net.Conn) {
 				name := tokens[1]
 				start, _ := strconv.Atoi(tokens[2])
 				stop, _ := strconv.Atoi(tokens[3])
-				slice := getRangeFromList(listGrid, name, start, stop)
+				slice := getRangeFromList(server.Lists, name, start, stop)
 				if len(slice) == 0 {
 					writer.WriteString(EMPTY_ARRAY)
 					writer.Flush()
@@ -181,37 +177,37 @@ func HandleConnection(conn net.Conn) {
 			}
 
 			if strings.EqualFold(tokens[0], RPUSH) {
-				length := addToListGrid(listGrid, tokens)
+				length := addToListGrid(server.Lists, tokens)
 				writer.WriteString(INTEGER)
 				writer.WriteString(strconv.Itoa(length))
-				writer.WriteString(RSVP_DELIMITER)
+				writer.WriteString(RESP_DELIMITER)
 				writer.Flush()
 			}
 
 			if strings.EqualFold(tokens[0], LPUSH) {
-				length := preAddToListGrid(listGrid, tokens)
-				fmt.Println(listGrid[tokens[1]])
+				length := preAddToListGrid(server.Lists, tokens)
+				fmt.Println(server.Lists[tokens[1]])
 				writer.WriteString(INTEGER)
 				writer.WriteString(strconv.Itoa(length))
-				writer.WriteString(RSVP_DELIMITER)
+				writer.WriteString(RESP_DELIMITER)
 				writer.Flush()
 			}
 
 			if strings.EqualFold(tokens[0], LLEN) {
-				val, ok := listGrid[tokens[1]].([]string)
+				val, ok := server.Lists[tokens[1]].([]string)
 				if !ok {
 					writer.WriteString(ZERO)
 					writer.Flush()
 				} else {
 					writer.WriteString(INTEGER)
 					writer.WriteString(strconv.Itoa(len(val)))
-					writer.WriteString(RSVP_DELIMITER)
+					writer.WriteString(RESP_DELIMITER)
 					writer.Flush()
 				}
 			}
 
 			if strings.EqualFold(tokens[0], LPOP) {
-				slice, ok := listGrid[tokens[1]].([]string)
+				slice, ok := server.Lists[tokens[1]].([]string)
 				name := tokens[1]
 				if !ok || len(slice) == 0 {
 					writer.WriteString(NULL_BULK_STRING)
@@ -219,17 +215,17 @@ func HandleConnection(conn net.Conn) {
 				}
 
 				if len(tokens) == 2 {
-					result := leftPop(listGrid, name, 1)
+					result := leftPop(server.Lists, name, 1)
 					length := strconv.Itoa(len(result[0]))
 					writer.WriteString(BULK_STRING)
 					writer.WriteString(length)
-					writer.WriteString(RSVP_DELIMITER)
+					writer.WriteString(RESP_DELIMITER)
 					writer.WriteString(result[0])
-					writer.WriteString(RSVP_DELIMITER)
+					writer.WriteString(RESP_DELIMITER)
 					writer.Flush()
 				} else if len(tokens) == 3 {
 					elements, _ := strconv.Atoi(tokens[2])
-					result := leftPop(listGrid, name, elements)
+					result := leftPop(server.Lists, name, elements)
 					message := buildArrayString(result)
 					writer.WriteString(message)
 					writer.Flush()
@@ -237,11 +233,11 @@ func HandleConnection(conn net.Conn) {
 			}
 
 			if strings.EqualFold(tokens[0], SET) {
-				keyValue[tokens[1]] = tokens[2]
+				server.Data[tokens[1]] = tokens[2]
 
 				if len(tokens) > 3 && strings.EqualFold(tokens[3], PX) {
 					milisecondsToEnd, _ := strconv.ParseInt(tokens[4], 10, 64)
-					keyTimetable[tokens[1]] = time.Now().Add(time.Duration(milisecondsToEnd) * time.Millisecond).UnixMilli()
+					server.Expires[tokens[1]] = time.Now().Add(time.Duration(milisecondsToEnd) * time.Millisecond).UnixMilli()
 				}
 
 				writer.WriteString(OK)
@@ -249,8 +245,8 @@ func HandleConnection(conn net.Conn) {
 			}
 
 			if strings.EqualFold(tokens[0], GET) {
-				val := keyValue[tokens[1]]
-				pttl, ok := keyTimetable[tokens[1]]
+				val := server.Data[tokens[1]]
+				pttl, ok := server.Expires[tokens[1]]
 				ttl := pttl - time.Now().UnixMilli()
 
 				if ok && ttl <= 0 {
@@ -259,9 +255,9 @@ func HandleConnection(conn net.Conn) {
 				} else {
 					writer.WriteString(BULK_STRING)
 					writer.WriteString(strconv.Itoa(len(val)))
-					writer.WriteString(RSVP_DELIMITER)
+					writer.WriteString(RESP_DELIMITER)
 					writer.WriteString(val)
-					writer.WriteString(RSVP_DELIMITER)
+					writer.WriteString(RESP_DELIMITER)
 					writer.Flush()
 				}
 
