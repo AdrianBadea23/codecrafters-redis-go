@@ -28,18 +28,6 @@ const (
 	ARRAY            = "*"
 )
 
-func normalizeIndex(index, length int) int {
-	for {
-		if index < 0 {
-			index += length
-		} else {
-			break
-		}
-	}
-
-	return index
-}
-
 func getRangeFromList(listGrid map[string]any, sliceName string, start, stop int) []string {
 	slice, ok := listGrid[sliceName].([]string)
 
@@ -50,11 +38,19 @@ func getRangeFromList(listGrid map[string]any, sliceName string, start, stop int
 	length := len(slice)
 
 	if start < 0 {
-		start = normalizeIndex(start, length)
+		start += length
+	}
+
+	if start < 0 {
+		start = 0
 	}
 
 	if stop < 0 {
-		stop = normalizeIndex(stop, length)
+		stop += length
+	}
+
+	if stop < 0 {
+		stop = 0
 	}
 
 	if start > length {
