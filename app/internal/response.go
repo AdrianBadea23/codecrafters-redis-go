@@ -16,6 +16,7 @@ const (
 	PX     = "PX"
 	EX     = "EX"
 	RPUSH  = "RPUSH"
+	LPUSH  = "LPUSH"
 	LRANGE = "LRANGE"
 
 	PONG             = "+PONG\r\n"
@@ -105,6 +106,26 @@ func addToListGrid(listGrid map[string]any, tokens []string) int {
 	}
 }
 
+func preAddToListGrid(listGrid map[string]any, tokens []string) int {
+	_, ok := listGrid[tokens[1]]
+
+	if !ok {
+		slice := make([]string, 0)
+		for i := len(tokens) - 1; i > 1; i-- {
+			slice = append(slice, tokens[i])
+		}
+		listGrid[tokens[1]] = slice // tokens[1] is the name given when inserting in the slice
+		return len(slice)
+	} else {
+		slice := listGrid[tokens[1]].([]string)
+		for i := len(tokens) - 1; i > 1; i-- {
+			slice = append(slice, tokens[i])
+		}
+		listGrid[tokens[1]] = slice
+		return len(slice)
+	}
+}
+
 func HandleConnection(conn net.Conn) {
 
 	keyValue := make(map[string]string)
@@ -147,6 +168,14 @@ func HandleConnection(conn net.Conn) {
 
 			if strings.EqualFold(tokens[0], RPUSH) {
 				length := addToListGrid(listGrid, tokens)
+				writer.WriteString(INTEGER)
+				writer.WriteString(strconv.Itoa(length))
+				writer.WriteString(RSVP_DELIMITER)
+				writer.Flush()
+			}
+
+			if strings.EqualFold(tokens[0], LPUSH) {
+				length := preAddToListGrid(listGrid, tokens)
 				writer.WriteString(INTEGER)
 				writer.WriteString(strconv.Itoa(length))
 				writer.WriteString(RSVP_DELIMITER)
