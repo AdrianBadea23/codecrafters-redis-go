@@ -112,14 +112,14 @@ func preAddToListGrid(listGrid map[string]any, tokens []string) int {
 
 	if !ok {
 		slice := make([]string, 0)
-		for i := len(tokens) - 1; i > 1; i-- {
-			slice = append(slice, tokens[i])
+		for i := 2; i < len(tokens); i++ {
+			slice = append([]string{tokens[i]}, slice...)
 		}
 		listGrid[tokens[1]] = slice // tokens[1] is the name given when inserting in the slice
 		return len(slice)
 	} else {
 		slice := listGrid[tokens[1]].([]string)
-		for i := len(tokens) - 1; i > 1; i-- {
+		for i := 2; i < len(tokens); i++ {
 			slice = append([]string{tokens[i]}, slice...)
 		}
 		listGrid[tokens[1]] = slice
