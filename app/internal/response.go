@@ -133,7 +133,7 @@ func preAddToListGrid(listGrid map[string]any, tokens []string) int {
 func leftPop(listGrid map[string]any, name string, elements int) []string {
 	slice, _ := listGrid[name].([]string)
 
-	sliceToKeep := slice[elements+1:]
+	sliceToKeep := slice[elements:]
 	sliceToDiscard := slice[:elements]
 	listGrid[name] = sliceToKeep
 
