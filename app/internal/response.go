@@ -265,7 +265,7 @@ func HandleConnection(conn net.Conn, server *RedisServer) {
 						channel := make(chan string, 1)
 						server.Channels[key] = append(server.Channels[key], channel)
 						server.Mu.Unlock()
-						ticker := time.NewTicker(time.Second * time.Duration(timeInSeconds))
+						duration := time.Duration(timeInSeconds * float64(time.Second))
 						select {
 						case <-channel:
 							result := leftPop(server.Lists, key, 1)
@@ -273,7 +273,12 @@ func HandleConnection(conn net.Conn, server *RedisServer) {
 							message := buildArrayString(result)
 							writer.WriteString(message)
 							writer.Flush()
-						case <-ticker.C:
+						case <-time.After(duration):
+							server.Mu.Lock()
+							channelsSlice := server.Channels[key]
+							channelsSlice = channelsSlice[1:]
+							server.Channels[key] = append(server.Channels[key], channelsSlice...)
+							server.Mu.Unlock()
 							writer.WriteString(NULL_ARRAY)
 							writer.Flush()
 						}
