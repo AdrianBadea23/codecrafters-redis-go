@@ -2,6 +2,7 @@ package internal
 
 import (
 	"bufio"
+	"fmt"
 	"net"
 	"strconv"
 	"strings"
@@ -116,6 +117,7 @@ func HandleConnection(conn net.Conn) {
 				start, _ := strconv.Atoi(tokens[1])
 				stop, _ := strconv.Atoi(tokens[2])
 				slice := getRangeFromList(listGrid, name, start, stop)
+				fmt.Println(slice)
 				message := buildArrayString(slice)
 				writer.WriteString(message)
 				writer.Flush()
