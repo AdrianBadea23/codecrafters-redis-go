@@ -221,9 +221,8 @@ func HandleConnection(conn net.Conn) {
 
 				if len(tokens) == 2 {
 					result := leftPop(listGrid, name, 1)
-					length := strconv.Itoa(len(result))
 					writer.WriteString(BULK_STRING)
-					writer.WriteString(length)
+					writer.WriteString("1")
 					writer.WriteString(RSVP_DELIMITER)
 					writer.WriteString(result[0])
 					writer.WriteString(RSVP_DELIMITER)
