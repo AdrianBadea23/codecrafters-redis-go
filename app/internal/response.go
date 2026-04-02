@@ -30,14 +30,14 @@ func addToListGrid(listGrid map[string]any, tokens []string) int {
 
 	if !ok {
 		slice := make([]string, 0)
-		for i := 2; i <= len(tokens); i++ {
+		for i := 2; i < len(tokens); i++ {
 			slice = append(slice, tokens[i])
 		}
 		listGrid[tokens[1]] = slice
 		return len(slice)
 	} else {
 		slice := listGrid[tokens[1]].([]string)
-		for i := 2; i <= len(tokens); i++ {
+		for i := 2; i < len(tokens); i++ {
 			slice = append(slice, tokens[i])
 		}
 		listGrid[tokens[1]] = slice
