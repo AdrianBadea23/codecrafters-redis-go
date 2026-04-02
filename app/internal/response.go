@@ -9,21 +9,63 @@ import (
 )
 
 const (
-	ECHO  = "ECHO"
-	PING  = "PING"
-	SET   = "SET"
-	GET   = "GET"
-	PX    = "PX"
-	EX    = "EX"
-	RPUSH = "RPUSH"
+	ECHO   = "ECHO"
+	PING   = "PING"
+	SET    = "SET"
+	GET    = "GET"
+	PX     = "PX"
+	EX     = "EX"
+	RPUSH  = "RPUSH"
+	LRANGE = "LRANGE"
 
 	PONG             = "+PONG\r\n"
 	OK               = "+OK\r\n"
 	NULL_BULK_STRING = "$-1\r\n"
+	EMPTY_ARRAY      = "*0\r\n"
 	RSVP_DELIMITER   = "\r\n"
 	BULK_STRING      = "$"
 	INTEGER          = ":"
+	ARRAY            = "*"
 )
+
+func getRangeFromList(listGrid map[string]any, sliceName string, start, stop int) []string {
+	slice, ok := listGrid[sliceName].([]string)
+	length := len(slice)
+	if !ok {
+		return []string{}
+	}
+
+	if start > length {
+		return []string{}
+	}
+
+	if start > stop {
+		return []string{}
+	}
+
+	if stop >= length {
+		return slice[start:]
+	}
+
+	return slice[start : stop+1]
+}
+
+func buildArrayString(slice []string) string {
+	var sb strings.Builder
+	sb.WriteString(ARRAY)
+	sb.WriteString(strconv.Itoa(len(slice)))
+	sb.WriteString(RSVP_DELIMITER)
+
+	for _, val := range slice {
+		sb.WriteString(BULK_STRING)
+		sb.WriteString(strconv.Itoa(len(val)))
+		sb.WriteString(RSVP_DELIMITER)
+		sb.WriteString(val)
+		sb.WriteString(RSVP_DELIMITER)
+	}
+
+	return sb.String()
+}
 
 func addToListGrid(listGrid map[string]any, tokens []string) int {
 	_, ok := listGrid[tokens[1]]
@@ -33,7 +75,7 @@ func addToListGrid(listGrid map[string]any, tokens []string) int {
 		for i := 2; i < len(tokens); i++ {
 			slice = append(slice, tokens[i])
 		}
-		listGrid[tokens[1]] = slice
+		listGrid[tokens[1]] = slice // tokens[1] is the name given when inserting in the slice
 		return len(slice)
 	} else {
 		slice := listGrid[tokens[1]].([]string)
@@ -66,6 +108,16 @@ func HandleConnection(conn net.Conn) {
 				writer.WriteString(RSVP_DELIMITER)
 				writer.WriteString(tokens[1])
 				writer.WriteString(RSVP_DELIMITER)
+				writer.Flush()
+			}
+
+			if strings.EqualFold(tokens[0], LRANGE) {
+				name := tokens[1]
+				start, _ := strconv.Atoi(tokens[1])
+				stop, _ := strconv.Atoi(tokens[2])
+				slice := getRangeFromList(listGrid, name, start, stop)
+				message := buildArrayString(slice)
+				writer.WriteString(message)
 				writer.Flush()
 			}
 
