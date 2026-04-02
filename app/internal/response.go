@@ -244,8 +244,9 @@ func HandleConnection(conn net.Conn, server *RedisServer) {
 
 			if strings.EqualFold(tokens[0], BLPOP) {
 				key := tokens[1]
+				lis, ok := server.Lists[key]
 
-				if len(server.Lists[key].([]string)) > 0 {
+				if ok && len(lis.([]string)) > 0 {
 					result := leftPop(server.Lists, key, 1)
 					length := strconv.Itoa(len(result[0]))
 					writer.WriteString(BULK_STRING)
@@ -261,6 +262,7 @@ func HandleConnection(conn net.Conn, server *RedisServer) {
 					server.Mu.Unlock()
 					<-channel
 					result := leftPop(server.Lists, key, 1)
+					result = append([]string{key}, result...)
 					message := buildArrayString(result)
 					writer.WriteString(message)
 					writer.Flush()
