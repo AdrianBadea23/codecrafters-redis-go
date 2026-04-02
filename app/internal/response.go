@@ -19,11 +19,13 @@ const (
 	RPUSH  = "RPUSH"
 	LPUSH  = "LPUSH"
 	LRANGE = "LRANGE"
+	LLEN   = "LLEN"
 
 	PONG             = "+PONG\r\n"
 	OK               = "+OK\r\n"
 	NULL_BULK_STRING = "$-1\r\n"
 	EMPTY_ARRAY      = "*0\r\n"
+	ZERO             = ":0\r\n"
 	RSVP_DELIMITER   = "\r\n"
 	BULK_STRING      = "$"
 	INTEGER          = ":"
@@ -182,6 +184,19 @@ func HandleConnection(conn net.Conn) {
 				writer.WriteString(strconv.Itoa(length))
 				writer.WriteString(RSVP_DELIMITER)
 				writer.Flush()
+			}
+
+			if strings.EqualFold(tokens[0], LLEN) {
+				val, ok := listGrid[tokens[1]].([]string)
+				if !ok {
+					writer.WriteString(ZERO)
+					writer.Flush()
+				} else {
+					writer.WriteString(INTEGER)
+					writer.WriteString(strconv.Itoa(len(val)))
+					writer.WriteString(RSVP_DELIMITER)
+					writer.Flush()
+				}
 			}
 
 			if strings.EqualFold(tokens[0], SET) {
