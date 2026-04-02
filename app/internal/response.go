@@ -225,6 +225,8 @@ func HandleConnection(conn net.Conn) {
 					writer.WriteString(BULK_STRING)
 					writer.WriteString(length)
 					writer.WriteString(RSVP_DELIMITER)
+					writer.WriteString(result[0])
+					writer.WriteString(RSVP_DELIMITER)
 					writer.Flush()
 				} else if len(tokens) == 3 {
 					elements, _ := strconv.Atoi(tokens[2])
