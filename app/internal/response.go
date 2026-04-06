@@ -223,8 +223,8 @@ func addStreamPartialGen(stream map[string][]streamStruct, tokens []string) stri
 
 	if !ok {
 		stream[id] = make([]streamStruct, 0)
-		auxMili = -1
-		auxSeq = -1
+		auxMili = 0
+		auxSeq = 0
 	} else {
 		auxStruct := stream[id][len(stream[id])-1]
 		auxSplitString = strings.Split(auxStruct.ID, "-")
