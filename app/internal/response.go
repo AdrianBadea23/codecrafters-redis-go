@@ -215,20 +215,25 @@ func validateStreamKey(stream map[string][]streamStruct, streamKey, id string) (
 func addStreamPartialGen(stream map[string][]streamStruct, tokens []string) string {
 	id := tokens[1]
 	newId := ""
+	var auxMili int64
+	var auxSeq int64
+	var auxSplitString []string
 	_, ok := stream[id]
 
 	if !ok {
 		stream[id] = make([]streamStruct, 0)
+		auxMili = -1
+		auxSeq = -1
+	} else {
+		auxStruct := stream[id][len(stream[id])-1]
+		auxSplitString = strings.Split(auxStruct.ID, "-")
+
+		auxMili, _ = strconv.ParseInt(auxSplitString[0], 10, 64)
+		auxSeq, _ = strconv.ParseInt(auxSplitString[1], 10, 64)
 	}
 
 	splitToken := strings.Split(tokens[2], "-")
 	mili, _ := strconv.ParseInt(splitToken[0], 10, 64)
-
-	auxStruct := stream[id][len(stream[id])-1]
-	auxSplitString := strings.Split(auxStruct.ID, "-")
-
-	auxMili, _ := strconv.ParseInt(auxSplitString[0], 10, 64)
-	auxSeq, _ := strconv.ParseInt(auxSplitString[1], 10, 64)
 
 	if !ok && mili == 0 {
 		newId = "0-1"
