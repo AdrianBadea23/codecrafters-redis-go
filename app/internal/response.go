@@ -347,9 +347,16 @@ func rangeOverStream(stream map[string][]streamStruct, tokens []string) string {
 	var fsb strings.Builder
 
 	if strings.Contains(tokens[2], "-") {
-		spl := strings.Split(tokens[2], "-")
-		minMili, _ = strconv.ParseInt(spl[0], 10, 64)
-		minSeq, _ = strconv.ParseInt(spl[1], 10, 64)
+
+		if tokens[2] == "-" {
+			minMili = 0
+			minSeq = 1
+		} else {
+			spl := strings.Split(tokens[2], "-")
+			minMili, _ = strconv.ParseInt(spl[0], 10, 64)
+			minSeq, _ = strconv.ParseInt(spl[1], 10, 64)
+		}
+
 	} else {
 		minMili, _ = strconv.ParseInt(tokens[2], 10, 64)
 		minSeq = 0
@@ -360,8 +367,15 @@ func rangeOverStream(stream map[string][]streamStruct, tokens []string) string {
 		maxMili, _ = strconv.ParseInt(spl[0], 10, 64)
 		maxSeq, _ = strconv.ParseInt(spl[1], 10, 64)
 	} else {
-		maxMili, _ = strconv.ParseInt(tokens[3], 10, 64)
-		maxSeq = math.MaxInt64
+
+		if tokens[3] == "+" {
+			maxMili = math.MaxInt64
+			maxSeq = math.MaxInt64
+		} else {
+			maxMili, _ = strconv.ParseInt(tokens[3], 10, 64)
+			maxSeq = math.MaxInt64
+		}
+
 	}
 
 	for _, value := range slice {
