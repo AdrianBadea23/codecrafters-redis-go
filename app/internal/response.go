@@ -194,6 +194,11 @@ func validateStreamKey(stream map[string][]streamStruct, streamKey, id string) (
 		auxSeq, _ := strconv.ParseInt(auxSplitString[1], 10, 64)
 		fmt.Println(auxMili)
 		fmt.Println(auxSeq)
+
+		if mili <= 0 && seq <= 0 {
+			return XADD_ID_GREATER_ZERO, false
+		}
+
 		if mili < auxMili {
 			return XADD_ID_SMALLER_ERROR, false
 		}
