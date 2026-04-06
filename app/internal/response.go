@@ -24,6 +24,7 @@ const (
 	BLPOP  = "BLPOP"
 	TYPE   = "TYPE"
 	XADD   = "XADD"
+	ERR    = "ERR"
 
 	STREAM                = "+stream\r\n"
 	STRING                = "+string\r\n"
@@ -366,7 +367,7 @@ func HandleConnection(conn net.Conn, server *RedisServer) {
 				if splitString[1] == "*" {
 					message := addStreamPartialGen(server.Streams, tokens)
 
-					if message[:4] == "-ERR" {
+					if strings.Contains(message, ERR) {
 						writer.WriteString(message)
 						writer.Flush()
 					} else {
