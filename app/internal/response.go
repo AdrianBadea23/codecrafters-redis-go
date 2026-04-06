@@ -198,7 +198,7 @@ func validateStreamKey(stream map[string][]streamStruct, streamKey, id string) (
 			return XADD_ID_SMALLER_ERROR, false
 		}
 
-		if mili == auxMili && seq < auxSeq {
+		if mili == auxMili && seq <= auxSeq {
 			return XADD_ID_SMALLER_ERROR, false
 		}
 	}
