@@ -311,6 +311,27 @@ func addStream(stream map[string][]streamStruct, tokens []string) string {
 	return tokens[2]
 }
 
+func isInRange(mili, seq, minMili, minSeq, maxMili, maxSeq int64) bool {
+
+	if mili < minSeq {
+		return false
+	}
+
+	if mili == minSeq && seq < minSeq {
+		return false
+	}
+
+	if mili > maxMili {
+		return false
+	}
+
+	if mili == maxMili && seq > maxSeq {
+		return false
+	}
+
+	return true
+}
+
 func rangeOverStream(stream map[string][]streamStruct, tokens []string) string {
 	slice := stream[tokens[1]]
 	respTwo := "*2\r\n"
@@ -348,7 +369,7 @@ func rangeOverStream(stream map[string][]streamStruct, tokens []string) string {
 		mili, _ := strconv.ParseInt(split[0], 10, 64)
 		seq, _ := strconv.ParseInt(split[1], 10, 64)
 
-		if minMili <= mili && mili <= maxMili && minSeq <= seq && seq <= maxSeq {
+		if isInRange(mili, seq, minMili, minSeq, maxMili, maxSeq) {
 			numberOfEles++
 			sb.WriteString(respTwo)
 			sb.WriteString(BULK_STRING)
