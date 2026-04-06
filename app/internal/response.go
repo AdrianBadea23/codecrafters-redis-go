@@ -356,11 +356,11 @@ func rangeOverStream(stream map[string][]streamStruct, tokens []string) string {
 	}
 
 	if strings.Contains(tokens[3], "-") {
-		spl := strings.Split(tokens[2], "-")
+		spl := strings.Split(tokens[3], "-")
 		maxMili, _ = strconv.ParseInt(spl[0], 10, 64)
 		maxSeq, _ = strconv.ParseInt(spl[1], 10, 64)
 	} else {
-		maxMili, _ = strconv.ParseInt(tokens[2], 10, 64)
+		maxMili, _ = strconv.ParseInt(tokens[3], 10, 64)
 		maxSeq = math.MaxInt64
 	}
 
