@@ -177,6 +177,8 @@ func validateStreamKey(stream map[string][]streamStruct, streamKey, id string) (
 	splitString := strings.Split(id, "-")
 	mili, _ := strconv.ParseInt(splitString[0], 10, 64)
 	seq, _ := strconv.ParseInt(splitString[1], 10, 64)
+	fmt.Println(mili)
+	fmt.Println(seq)
 
 	_, ok := stream[streamKey]
 
@@ -190,6 +192,8 @@ func validateStreamKey(stream map[string][]streamStruct, streamKey, id string) (
 		auxSplitString := strings.Split(aux.ID, "-")
 		auxMili, _ := strconv.ParseInt(auxSplitString[0], 10, 64)
 		auxSeq, _ := strconv.ParseInt(auxSplitString[1], 10, 64)
+		fmt.Println(auxMili)
+		fmt.Println(auxSeq)
 		if mili < auxMili {
 			return XADD_ID_SMALLER_ERROR, false
 		}
