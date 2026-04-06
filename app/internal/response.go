@@ -213,6 +213,31 @@ func validateStreamKey(stream map[string][]streamStruct, streamKey, id string) (
 
 }
 
+func addStreamFullGen(stream map[string][]streamStruct, tokens []string) string {
+	streamKey := tokens[1]
+
+	_, ok := stream[streamKey]
+
+	if !ok {
+		stream[streamKey] = make([]streamStruct, 0)
+	}
+
+	id := fmt.Sprintf("%d-0", time.Now().UnixMilli())
+
+	aux := streamStruct{
+		ID:     id,
+		Fields: make(map[string]any),
+	}
+
+	for i := 3; i < len(tokens); i += 2 {
+		aux.Fields[tokens[i]] = tokens[i+1]
+	}
+
+	stream[id] = append(stream[id], aux)
+
+	return id
+}
+
 func addStreamPartialGen(stream map[string][]streamStruct, tokens []string) string {
 	id := tokens[1]
 	newId := ""
@@ -360,35 +385,45 @@ func HandleConnection(conn net.Conn, server *RedisServer) {
 
 			if strings.EqualFold(tokens[0], XADD) {
 
-				splitString := strings.Split(tokens[2], "-")
-
-				if splitString[1] == "*" {
-					message := addStreamPartialGen(server.Streams, tokens)
-
-					if strings.Contains(message, ERR) {
-						writer.WriteString(message)
-						writer.Flush()
-					} else {
-						writer.WriteString(BULK_STRING)
-						writer.WriteString(strconv.Itoa(len(message)))
-						writer.WriteString(RESP_DELIMITER)
-						writer.WriteString(message)
-						writer.WriteString(RESP_DELIMITER)
-						writer.Flush()
-					}
+				if tokens[2] == "*" {
+					message := addStreamFullGen(server.Streams, tokens)
+					writer.WriteString(BULK_STRING)
+					writer.WriteString(strconv.Itoa(len(message)))
+					writer.WriteString(RESP_DELIMITER)
+					writer.WriteString(message)
+					writer.WriteString(RESP_DELIMITER)
+					writer.Flush()
 				} else {
-					message, ok := validateStreamKey(server.Streams, tokens[1], tokens[2])
-					if ok {
-						message := addStream(server.Streams, tokens)
-						writer.WriteString(BULK_STRING)
-						writer.WriteString(strconv.Itoa(len(message)))
-						writer.WriteString(RESP_DELIMITER)
-						writer.WriteString(message)
-						writer.WriteString(RESP_DELIMITER)
-						writer.Flush()
+					splitString := strings.Split(tokens[2], "-")
+
+					if splitString[1] == "*" {
+						message := addStreamPartialGen(server.Streams, tokens)
+
+						if strings.Contains(message, ERR) {
+							writer.WriteString(message)
+							writer.Flush()
+						} else {
+							writer.WriteString(BULK_STRING)
+							writer.WriteString(strconv.Itoa(len(message)))
+							writer.WriteString(RESP_DELIMITER)
+							writer.WriteString(message)
+							writer.WriteString(RESP_DELIMITER)
+							writer.Flush()
+						}
 					} else {
-						writer.WriteString(message)
-						writer.Flush()
+						message, ok := validateStreamKey(server.Streams, tokens[1], tokens[2])
+						if ok {
+							message := addStream(server.Streams, tokens)
+							writer.WriteString(BULK_STRING)
+							writer.WriteString(strconv.Itoa(len(message)))
+							writer.WriteString(RESP_DELIMITER)
+							writer.WriteString(message)
+							writer.WriteString(RESP_DELIMITER)
+							writer.Flush()
+						} else {
+							writer.WriteString(message)
+							writer.Flush()
+						}
 					}
 				}
 
