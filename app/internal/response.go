@@ -25,19 +25,21 @@ const (
 	TYPE   = "TYPE"
 	XADD   = "XADD"
 
-	STREAM           = "+stream\r\n"
-	STRING           = "+string\r\n"
-	NONE             = "+none\r\n"
-	PONG             = "+PONG\r\n"
-	OK               = "+OK\r\n"
-	NULL_BULK_STRING = "$-1\r\n"
-	NULL_ARRAY       = "*-1\r\n"
-	EMPTY_ARRAY      = "*0\r\n"
-	ZERO             = ":0\r\n"
-	RESP_DELIMITER   = "\r\n"
-	BULK_STRING      = "$"
-	INTEGER          = ":"
-	ARRAY            = "*"
+	STREAM                = "+stream\r\n"
+	STRING                = "+string\r\n"
+	NONE                  = "+none\r\n"
+	PONG                  = "+PONG\r\n"
+	OK                    = "+OK\r\n"
+	NULL_BULK_STRING      = "$-1\r\n"
+	NULL_ARRAY            = "*-1\r\n"
+	EMPTY_ARRAY           = "*0\r\n"
+	ZERO                  = ":0\r\n"
+	RESP_DELIMITER        = "\r\n"
+	BULK_STRING           = "$"
+	INTEGER               = ":"
+	ARRAY                 = "*"
+	XADD_ID_SMALLER_ERROR = "-ERR The ID specified in XADD is equal or smaller than the target stream top item\r\n"
+	XADD_ID_GREATER_ZERO  = "-ERR The ID specified in XADD must be greater than 0-0\r\n"
 )
 
 func getRangeFromList(listGrid map[string]any, sliceName string, start, stop int) []string {
@@ -171,6 +173,36 @@ func getDataType(server *RedisServer, name string) string {
 	return NONE
 }
 
+func validateStreamKey(stream map[string][]streamStruct, streamKey, id string) (string, bool) {
+	splitString := strings.Split(id, "-")
+	mili, _ := strconv.ParseInt(splitString[0], 10, 64)
+	seq, _ := strconv.ParseInt(splitString[1], 10, 64)
+
+	_, ok := stream[streamKey]
+
+	if !ok {
+		if mili <= 0 && seq <= 0 {
+			return XADD_ID_GREATER_ZERO, false
+		}
+	} else {
+
+		aux := stream[streamKey][len(stream[streamKey])-1]
+		auxSplitString := strings.Split(aux.ID, "-")
+		auxMili, _ := strconv.ParseInt(auxSplitString[0], 10, 64)
+		auxSeq, _ := strconv.ParseInt(auxSplitString[1], 10, 64)
+		if mili < auxMili {
+			return XADD_ID_SMALLER_ERROR, false
+		}
+
+		if mili == auxMili && seq < auxSeq {
+			return XADD_ID_SMALLER_ERROR, false
+		}
+	}
+
+	return "OK", true
+
+}
+
 func addStream(stream map[string][]streamStruct, tokens []string) string {
 	id := tokens[1]
 
@@ -268,13 +300,20 @@ func HandleConnection(conn net.Conn, server *RedisServer) {
 			}
 
 			if strings.EqualFold(tokens[0], XADD) {
-				message := addStream(server.Streams, tokens)
-				writer.WriteString(BULK_STRING)
-				writer.WriteString(strconv.Itoa(len(message)))
-				writer.WriteString(RESP_DELIMITER)
-				writer.WriteString(message)
-				writer.WriteString(RESP_DELIMITER)
-				writer.Flush()
+				message, ok := validateStreamKey(server.Streams, tokens[1], tokens[2])
+				if ok {
+					message := addStream(server.Streams, tokens)
+					writer.WriteString(BULK_STRING)
+					writer.WriteString(strconv.Itoa(len(message)))
+					writer.WriteString(RESP_DELIMITER)
+					writer.WriteString(message)
+					writer.WriteString(RESP_DELIMITER)
+					writer.Flush()
+				} else {
+					writer.WriteString(message)
+					writer.Flush()
+				}
+
 			}
 
 			if strings.EqualFold(tokens[0], LPOP) {
