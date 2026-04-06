@@ -212,6 +212,52 @@ func validateStreamKey(stream map[string][]streamStruct, streamKey, id string) (
 
 }
 
+func addStreamPartialGen(stream map[string][]streamStruct, tokens []string) string {
+	id := tokens[1]
+	newId := ""
+	_, ok := stream[id]
+
+	if !ok {
+		stream[id] = make([]streamStruct, 0)
+	}
+
+	splitToken := strings.Split(tokens[2], "-")
+	mili, _ := strconv.ParseInt(splitToken[0], 10, 64)
+
+	auxStruct := stream[id][len(stream[id])-1]
+	auxSplitString := strings.Split(auxStruct.ID, "-")
+
+	auxMili, _ := strconv.ParseInt(auxSplitString[0], 10, 64)
+	auxSeq, _ := strconv.ParseInt(auxSplitString[1], 10, 64)
+
+	if !ok && mili == 0 {
+		newId = "0-1"
+	}
+
+	if mili < auxMili {
+		return XADD_ID_SMALLER_ERROR
+	}
+
+	if mili > auxMili {
+		newId = splitToken[0] + "-0"
+	} else {
+		newId = auxSplitString[0] + "-" + strconv.Itoa(int(auxSeq)+1)
+	}
+
+	aux := streamStruct{
+		ID:     newId,
+		Fields: make(map[string]any),
+	}
+
+	for i := 3; i < len(tokens); i += 2 {
+		aux.Fields[tokens[i]] = tokens[i+1]
+	}
+
+	stream[id] = append(stream[id], aux)
+
+	return newId
+}
+
 func addStream(stream map[string][]streamStruct, tokens []string) string {
 	id := tokens[1]
 
@@ -309,18 +355,37 @@ func HandleConnection(conn net.Conn, server *RedisServer) {
 			}
 
 			if strings.EqualFold(tokens[0], XADD) {
-				message, ok := validateStreamKey(server.Streams, tokens[1], tokens[2])
-				if ok {
-					message := addStream(server.Streams, tokens)
-					writer.WriteString(BULK_STRING)
-					writer.WriteString(strconv.Itoa(len(message)))
-					writer.WriteString(RESP_DELIMITER)
-					writer.WriteString(message)
-					writer.WriteString(RESP_DELIMITER)
-					writer.Flush()
+
+				splitString := strings.Split(tokens[2], "-")
+
+				if splitString[1] == "*" {
+					message := addStreamPartialGen(server.Streams, tokens)
+
+					if message[:4] == "-ERR" {
+						writer.WriteString(message)
+						writer.Flush()
+					} else {
+						writer.WriteString(BULK_STRING)
+						writer.WriteString(strconv.Itoa(len(message)))
+						writer.WriteString(RESP_DELIMITER)
+						writer.WriteString(message)
+						writer.WriteString(RESP_DELIMITER)
+						writer.Flush()
+					}
 				} else {
-					writer.WriteString(message)
-					writer.Flush()
+					message, ok := validateStreamKey(server.Streams, tokens[1], tokens[2])
+					if ok {
+						message := addStream(server.Streams, tokens)
+						writer.WriteString(BULK_STRING)
+						writer.WriteString(strconv.Itoa(len(message)))
+						writer.WriteString(RESP_DELIMITER)
+						writer.WriteString(message)
+						writer.WriteString(RESP_DELIMITER)
+						writer.Flush()
+					} else {
+						writer.WriteString(message)
+						writer.Flush()
+					}
 				}
 
 			}
