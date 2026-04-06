@@ -25,6 +25,7 @@ const (
 	TYPE   = "TYPE"
 	XADD   = "XADD"
 
+	STREAM           = "+stream\r\n"
 	STRING           = "+string\r\n"
 	NONE             = "+none\r\n"
 	PONG             = "+PONG\r\n"
@@ -155,14 +156,19 @@ func leftPop(listGrid map[string]any, name string, elements int) []string {
 	return sliceToDiscard
 }
 
-func getDataType(listGrid map[string]string, name string) string {
-	_, ok := listGrid[name]
+func getDataType(server *RedisServer, name string) string {
+	_, ok := server.Data[name]
+	_, ok1 := server.Streams[name]
 
-	if !ok {
-		return NONE
+	if ok {
+		return STRING
 	}
 
-	return STRING
+	if ok1 {
+		return STREAM
+	}
+
+	return NONE
 }
 
 func addStream(stream map[string][]streamStruct, tokens []string) string {
@@ -256,7 +262,7 @@ func HandleConnection(conn net.Conn, server *RedisServer) {
 
 			if strings.EqualFold(tokens[0], TYPE) {
 				name := tokens[1]
-				val := getDataType(server.Data, name)
+				val := getDataType(server, name)
 				writer.WriteString(val)
 				writer.Flush()
 			}
