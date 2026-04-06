@@ -24,6 +24,7 @@ const (
 	BLPOP  = "BLPOP"
 	TYPE   = "TYPE"
 	XADD   = "XADD"
+	XRANGE = "XRANGE"
 	ERR    = "ERR"
 
 	STREAM                = "+stream\r\n"
@@ -310,6 +311,78 @@ func addStream(stream map[string][]streamStruct, tokens []string) string {
 	return tokens[2]
 }
 
+func rangeOverStream(stream map[string][]streamStruct, tokens []string) string {
+	slice := stream[tokens[1]]
+	respTwo := "*2\r\n"
+	numberOfEles := 0
+
+	var minMili int64
+	var maxMili int64
+	var minSeq int64
+	var maxSeq int64
+
+	var sb strings.Builder
+	var fsb strings.Builder
+
+	if strings.Contains(tokens[2], "-") {
+		spl := strings.Split(tokens[2], "-")
+		minMili, _ = strconv.ParseInt(spl[0], 10, 64)
+		minSeq, _ = strconv.ParseInt(spl[1], 10, 64)
+	} else {
+		minMili, _ = strconv.ParseInt(tokens[2], 10, 64)
+		minSeq = 0
+	}
+
+	if strings.Contains(tokens[3], "-") {
+		spl := strings.Split(tokens[2], "-")
+		maxMili, _ = strconv.ParseInt(spl[0], 10, 64)
+		maxSeq, _ = strconv.ParseInt(spl[1], 10, 64)
+	} else {
+		maxMili, _ = strconv.ParseInt(tokens[2], 10, 64)
+		maxSeq = 0
+	}
+
+	for _, value := range slice {
+
+		split := strings.Split(value.ID, "-")
+		mili, _ := strconv.ParseInt(split[0], 10, 64)
+		seq, _ := strconv.ParseInt(split[1], 10, 64)
+
+		if minMili <= mili && mili <= maxMili && minSeq <= seq && seq <= maxSeq {
+			numberOfEles++
+			sb.WriteString(respTwo)
+			sb.WriteString(BULK_STRING)
+			sb.WriteString(strconv.Itoa(len(value.ID)))
+			sb.WriteString(RESP_DELIMITER)
+			sb.WriteString(value.ID)
+			sb.WriteString(RESP_DELIMITER)
+			sb.WriteString(ARRAY)
+			sb.WriteString(strconv.Itoa(len(value.Fields) * 2))
+			sb.WriteString(RESP_DELIMITER)
+			for key, value := range value.Fields {
+				sb.WriteString(BULK_STRING)
+				sb.WriteString(strconv.Itoa(len(key)))
+				sb.WriteString(RESP_DELIMITER)
+				sb.WriteString(key)
+				sb.WriteString(RESP_DELIMITER)
+				sb.WriteString(BULK_STRING)
+				sb.WriteString(strconv.Itoa(len(value.(string))))
+				sb.WriteString(RESP_DELIMITER)
+				sb.WriteString(value.(string))
+				sb.WriteString(RESP_DELIMITER)
+			}
+		}
+	}
+
+	fsb.WriteString(ARRAY)
+	fsb.WriteString(strconv.Itoa(numberOfEles))
+	fsb.WriteString(RESP_DELIMITER)
+	fsb.WriteString(sb.String())
+
+	return fsb.String()
+
+}
+
 func HandleConnection(conn net.Conn, server *RedisServer) {
 
 	for {
@@ -380,6 +453,12 @@ func HandleConnection(conn net.Conn, server *RedisServer) {
 				name := tokens[1]
 				val := getDataType(server, name)
 				writer.WriteString(val)
+				writer.Flush()
+			}
+
+			if strings.EqualFold(tokens[0], XRANGE) {
+				message := rangeOverStream(server.Streams, tokens)
+				writer.WriteString(message)
 				writer.Flush()
 			}
 
