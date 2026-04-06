@@ -22,7 +22,10 @@ const (
 	LLEN   = "LLEN"
 	LPOP   = "LPOP"
 	BLPOP  = "BLPOP"
+	TYPE   = "TYPE"
 
+	STRING           = "+string\r\n"
+	NONE             = "+none\r\n"
 	PONG             = "+PONG\r\n"
 	OK               = "+OK\r\n"
 	NULL_BULK_STRING = "$-1\r\n"
@@ -151,6 +154,16 @@ func leftPop(listGrid map[string]any, name string, elements int) []string {
 	return sliceToDiscard
 }
 
+func getDataType(listGrid map[string]any, name string) string {
+	_, ok := listGrid[name]
+
+	if !ok {
+		return NONE
+	}
+
+	return STRING
+}
+
 func HandleConnection(conn net.Conn, server *RedisServer) {
 
 	for {
@@ -215,6 +228,13 @@ func HandleConnection(conn net.Conn, server *RedisServer) {
 					writer.WriteString(RESP_DELIMITER)
 					writer.Flush()
 				}
+			}
+
+			if strings.EqualFold(tokens[0], TYPE) {
+				name := tokens[1]
+				val := getDataType(server.Lists, name)
+				writer.WriteString(val)
+				writer.Flush()
 			}
 
 			if strings.EqualFold(tokens[0], LPOP) {
