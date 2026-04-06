@@ -3,6 +3,7 @@ package internal
 import (
 	"bufio"
 	"fmt"
+	"math"
 	"net"
 	"strconv"
 	"strings"
@@ -313,11 +314,11 @@ func addStream(stream map[string][]streamStruct, tokens []string) string {
 
 func isInRange(mili, seq, minMili, minSeq, maxMili, maxSeq int64) bool {
 
-	if mili < minSeq {
+	if mili < minMili {
 		return false
 	}
 
-	if mili == minSeq && seq < minSeq {
+	if mili == minMili && seq < minSeq {
 		return false
 	}
 
@@ -360,7 +361,7 @@ func rangeOverStream(stream map[string][]streamStruct, tokens []string) string {
 		maxSeq, _ = strconv.ParseInt(spl[1], 10, 64)
 	} else {
 		maxMili, _ = strconv.ParseInt(tokens[2], 10, 64)
-		maxSeq = 0
+		maxSeq = math.MaxInt64
 	}
 
 	for _, value := range slice {
