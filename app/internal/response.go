@@ -154,7 +154,7 @@ func leftPop(listGrid map[string]any, name string, elements int) []string {
 	return sliceToDiscard
 }
 
-func getDataType(listGrid map[string]any, name string) string {
+func getDataType(listGrid map[string]string, name string) string {
 	_, ok := listGrid[name]
 
 	if !ok {
@@ -232,7 +232,7 @@ func HandleConnection(conn net.Conn, server *RedisServer) {
 
 			if strings.EqualFold(tokens[0], TYPE) {
 				name := tokens[1]
-				val := getDataType(server.Lists, name)
+				val := getDataType(server.Data, name)
 				writer.WriteString(val)
 				writer.Flush()
 			}
