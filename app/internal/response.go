@@ -240,13 +240,9 @@ func addStreamPartialGen(stream map[string][]streamStruct, tokens []string) stri
 
 	if !ok && mili == 0 {
 		newId = "0-1"
-	}
-
-	if mili < auxMili {
+	} else if mili < auxMili {
 		return XADD_ID_SMALLER_ERROR
-	}
-
-	if mili > auxMili {
+	} else if mili > auxMili {
 		newId = splitToken[0] + "-0"
 	} else {
 		newId = auxSplitString[0] + "-" + strconv.Itoa(int(auxSeq)+1)
