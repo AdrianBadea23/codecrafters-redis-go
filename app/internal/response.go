@@ -235,6 +235,8 @@ func addStreamPartialGen(stream map[string][]streamStruct, tokens []string) stri
 
 	splitToken := strings.Split(tokens[2], "-")
 	mili, _ := strconv.ParseInt(splitToken[0], 10, 64)
+	fmt.Println(mili)
+	fmt.Println(ok)
 
 	if !ok && mili == 0 {
 		newId = "0-1"
