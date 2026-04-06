@@ -23,6 +23,7 @@ const (
 	LPOP   = "LPOP"
 	BLPOP  = "BLPOP"
 	TYPE   = "TYPE"
+	XADD   = "XADD"
 
 	STRING           = "+string\r\n"
 	NONE             = "+none\r\n"
@@ -164,6 +165,29 @@ func getDataType(listGrid map[string]string, name string) string {
 	return STRING
 }
 
+func addStream(stream map[string][]streamStruct, tokens []string) string {
+	id := tokens[1]
+
+	_, ok := stream[id]
+
+	if !ok {
+		stream[id] = make([]streamStruct, 0)
+	}
+
+	aux := streamStruct{
+		ID:     tokens[2],
+		Fields: make(map[string]any),
+	}
+
+	for i := 3; i < len(tokens); i += 2 {
+		aux.Fields[tokens[i]] = tokens[i+1]
+	}
+
+	stream[id] = append(stream[id], aux)
+
+	return tokens[2]
+}
+
 func HandleConnection(conn net.Conn, server *RedisServer) {
 
 	for {
@@ -234,6 +258,16 @@ func HandleConnection(conn net.Conn, server *RedisServer) {
 				name := tokens[1]
 				val := getDataType(server.Data, name)
 				writer.WriteString(val)
+				writer.Flush()
+			}
+
+			if strings.EqualFold(tokens[0], XADD) {
+				message := addStream(server.Streams, tokens)
+				writer.WriteString(BULK_STRING)
+				writer.WriteString(strconv.Itoa(len(message)))
+				writer.WriteString(RESP_DELIMITER)
+				writer.WriteString(message)
+				writer.WriteString(RESP_DELIMITER)
 				writer.Flush()
 			}
 
