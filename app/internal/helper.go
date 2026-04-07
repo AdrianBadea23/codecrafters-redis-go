@@ -94,6 +94,14 @@ func buildBulkString(writer *bufio.Writer, val string) {
 	writer.Flush()
 }
 
+func stringBuildBulkString(sb *strings.Builder, val string) {
+	sb.WriteString(BULK_STRING)
+	sb.WriteString(strconv.Itoa(len(val)))
+	sb.WriteString(RESP_DELIMITER)
+	sb.WriteString(val)
+	sb.WriteString(RESP_DELIMITER)
+}
+
 func buildInteger(writer *bufio.Writer, val int) {
 	writer.WriteString(INTEGER)
 	writer.WriteString(strconv.Itoa(val))
@@ -459,10 +467,20 @@ func splitAndReturnInt(streamId string) (int64, int64) {
 	return milis, seq
 }
 
+func preBuildString(sb *strings.Builder, streamKey string) {
+	sb.WriteString(ARRAY)
+	sb.WriteString("1")
+	sb.WriteString(RESP_DELIMITER)
+	stringBuildBulkString(sb, streamKey)
+}
+
 func queryStream(stream map[string][]streamStruct, streamKey, streamId string) string {
 	slice := stream[streamKey]
 	var sb strings.Builder
-	// var fsb strings.Builder
+	var fsb strings.Builder
+
+	preBuildString(&fsb, streamKey)
+
 	milis, seq := splitAndReturnInt(streamId)
 	// fmt.Println(slice, streamKey, streamId)
 
