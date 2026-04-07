@@ -506,12 +506,14 @@ func queryStream(stream map[string][]streamStruct, streamKey, streamId string) s
 	return fsb.String()
 }
 
-func queryMultipleStreams(stream map[string][]streamStruct, keyIdPairs map[string]string) string {
+func queryMultipleStreams(stream map[string][]streamStruct, keyPairs []string, idPairs []string) string {
 	var sb strings.Builder
 	slice := make([]string, 0)
 
-	for key, val := range keyIdPairs {
-		message := queryStream(stream, key, val)
+	length := len(keyPairs)
+
+	for i := 0; i < length; i++ {
+		message := queryStream(stream, keyPairs[i], idPairs[i])
 		slice = append(slice, message)
 	}
 
@@ -529,14 +531,17 @@ func queryMultipleStreams(stream map[string][]streamStruct, keyIdPairs map[strin
 
 }
 
-func makeMapFromTokens(token []string) map[string]string {
+func makeArraysFromTokens(token []string) ([]string, []string) {
 	auxSlice := token[2:]
 	length := len(auxSlice) / 2
-	myMap := make(map[string]string)
+	myKeys := make([]string, 0)
+	myIds := make([]string, 0)
 
 	for i := 0; i < length; i++ {
-		myMap[auxSlice[i]] = auxSlice[i+length]
+		myKeys = append(myKeys, auxSlice[i])
+		myIds = append(myIds, auxSlice[i+length])
+		// myMap[auxSlice[i]] = auxSlice[i+length]
 	}
 
-	return myMap
+	return myKeys, myIds
 }
