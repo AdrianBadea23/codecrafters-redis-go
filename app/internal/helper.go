@@ -439,15 +439,36 @@ func rangeOverStream(stream map[string][]streamStruct, tokens []string) string {
 
 }
 
+func isInRangeXread(milis, seq, auxMilis, auxSeq int64) bool {
+	if auxMilis <= milis {
+		return false
+	}
+
+	if auxMilis == milis && auxSeq <= seq {
+		return false
+	}
+
+	return true
+}
+
+func splitAndReturnInt(streamId string) (int64, int64) {
+	splits := strings.Split(streamId, "-")
+	milis, _ := strconv.ParseInt(splits[0], 10, 64)
+	seq, _ := strconv.ParseInt(splits[1], 10, 64)
+
+	return milis, seq
+}
+
 func queryStream(stream map[string][]streamStruct, streamKey, streamId string) string {
 	slice := stream[streamKey]
 	var sb strings.Builder
 	// var fsb strings.Builder
-
-	fmt.Println(slice, streamKey, streamId)
+	milis, seq := splitAndReturnInt(streamId)
+	// fmt.Println(slice, streamKey, streamId)
 
 	for _, val := range slice {
-		if val.ID == streamId {
+		auxMilis, auxSeq := splitAndReturnInt(val.ID)
+		if isInRangeXread(milis, seq, auxMilis, auxSeq) {
 			helperForArray(&sb, val)
 		}
 	}
