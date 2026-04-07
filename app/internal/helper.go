@@ -473,5 +473,7 @@ func queryStream(stream map[string][]streamStruct, streamKey, streamId string) s
 		}
 	}
 
+	fmt.Println(sb.String())
+
 	return sb.String()
 }
