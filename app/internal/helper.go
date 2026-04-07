@@ -495,6 +495,7 @@ func queryStream(stream map[string][]streamStruct, streamKey, streamId string) s
 			helperForArray(&sb, val)
 		}
 	}
+	fsb.WriteString(ARRAY)
 	fsb.WriteString(strconv.Itoa(numOfEles))
 	fsb.WriteString(RESP_DELIMITER)
 	fsb.WriteString(sb.String())
