@@ -468,13 +468,16 @@ func splitAndReturnInt(streamId string) (int64, int64) {
 }
 
 func preBuildString(sb *strings.Builder, streamKey string) {
-	sb.WriteString(ARRAY)
-	sb.WriteString("1")
-	sb.WriteString(RESP_DELIMITER)
-	sb.WriteString(ARRAY)
-	sb.WriteString("2")
-	sb.WriteString(RESP_DELIMITER)
-	stringBuildBulkString(sb, streamKey)
+	// sb.WriteString(BULK_STRING)
+	// sb.WriteString("1")
+	// sb.WriteString(RESP_DELIMITER)
+	// sb.WriteString(ARRAY)
+	// sb.WriteString("2")
+	// sb.WriteString(RESP_DELIMITER)
+	// stringBuildBulkString(sb, streamKey)
+
+	sb.WriteString("*2\r\n")
+	sb.WriteString("$" + strconv.Itoa(len(streamKey)) + "\r\n" + streamKey + "\r\n")
 }
 
 func queryStream(stream map[string][]streamStruct, streamKey, streamId string) string {
