@@ -471,6 +471,9 @@ func preBuildString(sb *strings.Builder, streamKey string) {
 	sb.WriteString(ARRAY)
 	sb.WriteString("1")
 	sb.WriteString(RESP_DELIMITER)
+	sb.WriteString(ARRAY)
+	sb.WriteString("2")
+	sb.WriteString(RESP_DELIMITER)
 	stringBuildBulkString(sb, streamKey)
 }
 
