@@ -144,7 +144,7 @@ func HandleConnection(conn net.Conn, server *RedisServer) {
 			if strings.EqualFold(tokens[0], XREAD) {
 				myMap := makeMapFromTokens(tokens)
 				message := queryMultipleStreams(server.Streams, myMap)
-				fmt.Println(message)
+				// fmt.Println(message)
 				writer.WriteString(message)
 				writer.Flush()
 			}
