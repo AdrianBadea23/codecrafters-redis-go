@@ -440,7 +440,7 @@ func rangeOverStream(stream map[string][]streamStruct, tokens []string) string {
 }
 
 func isInRangeXread(milis, seq, auxMilis, auxSeq int64) bool {
-	if auxMilis <= milis {
+	if auxMilis < milis {
 		return false
 	}
 
@@ -472,8 +472,6 @@ func queryStream(stream map[string][]streamStruct, streamKey, streamId string) s
 			helperForArray(&sb, val)
 		}
 	}
-
-	fmt.Println(sb.String())
 
 	return sb.String()
 }
