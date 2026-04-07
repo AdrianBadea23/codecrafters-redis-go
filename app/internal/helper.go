@@ -520,7 +520,7 @@ func queryMultipleStreams(stream map[string][]streamStruct, keyIdPairs map[strin
 		sb.WriteString(val)
 	}
 
-	sb.WriteString(RESP_DELIMITER)
+	// sb.WriteString(RESP_DELIMITER)
 
 	return sb.String()
 
