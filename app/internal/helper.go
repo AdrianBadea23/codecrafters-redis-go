@@ -481,6 +481,7 @@ func queryStream(stream map[string][]streamStruct, streamKey, streamId string) s
 	slice := stream[streamKey]
 	var sb strings.Builder
 	var fsb strings.Builder
+	numOfEles := 0
 
 	preBuildString(&fsb, streamKey)
 
@@ -490,10 +491,12 @@ func queryStream(stream map[string][]streamStruct, streamKey, streamId string) s
 	for _, val := range slice {
 		auxMilis, auxSeq := splitAndReturnInt(val.ID)
 		if isInRangeXread(milis, seq, auxMilis, auxSeq) {
+			numOfEles++
 			helperForArray(&sb, val)
 		}
 	}
-
+	fsb.WriteString(strconv.Itoa(numOfEles))
+	fsb.WriteString(RESP_DELIMITER)
 	fsb.WriteString(sb.String())
 
 	return fsb.String()
