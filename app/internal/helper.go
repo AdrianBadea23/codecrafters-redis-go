@@ -531,7 +531,7 @@ func makeMapFromTokens(token []string) map[string]string {
 	length := len(auxSlice) / 2
 	myMap := make(map[string]string)
 
-	for i := 0; i <= length; i++ {
+	for i := 0; i < length; i++ {
 		myMap[auxSlice[i]] = auxSlice[i+length]
 	}
 
