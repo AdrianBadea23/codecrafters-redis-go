@@ -491,5 +491,7 @@ func queryStream(stream map[string][]streamStruct, streamKey, streamId string) s
 		}
 	}
 
-	return sb.String()
+	fsb.WriteString(sb.String())
+
+	return fsb.String()
 }
