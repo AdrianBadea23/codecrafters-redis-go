@@ -495,10 +495,10 @@ func queryStream(stream map[string][]streamStruct, streamKey, streamId string) s
 			helperForArray(&sb, val)
 		}
 	}
-	fsb.WriteString(ARRAY)
-	fsb.WriteString(strconv.Itoa(numOfEles))
-	fsb.WriteString(RESP_DELIMITER)
-	fsb.WriteString(sb.String())
+	// fsb.WriteString(ARRAY)
+	// fsb.WriteString(strconv.Itoa(numOfEles))
+	// fsb.WriteString(RESP_DELIMITER)
+	// fsb.WriteString(sb.String())
 
 	return fsb.String()
 }
@@ -512,15 +512,15 @@ func queryMultipleStreams(stream map[string][]streamStruct, keyIdPairs map[strin
 		slice = append(slice, message)
 	}
 
-	// sb.WriteString(ARRAY)
-	// sb.WriteString(strconv.Itoa(len(slice)))
-	// sb.WriteString(RESP_DELIMITER)
+	sb.WriteString(ARRAY)
+	sb.WriteString(strconv.Itoa(len(slice)))
+	sb.WriteString(RESP_DELIMITER)
 
 	for _, val := range slice {
 		sb.WriteString(val)
 	}
 
-	// sb.WriteString(RESP_DELIMITER)
+	sb.WriteString(RESP_DELIMITER)
 
 	return sb.String()
 
