@@ -45,15 +45,15 @@ func HandleConnection(conn net.Conn, server *server.RedisServer) {
 		switch tokens[0] {
 		case utils.ECHO:
 
-			echo.Echo(conn, tokens, writer)
+			echo.Echo(writer, tokens)
 
 		case utils.LRANGE:
 
-			lrange.Lrange(conn, tokens, writer, server)
+			lrange.Lrange(writer, server, tokens)
 
 		case utils.RPUSH:
 
-			rpush.Rpush(conn, server, writer, tokens)
+			rpush.Rpush(writer, server, tokens)
 
 		case utils.LPUSH:
 

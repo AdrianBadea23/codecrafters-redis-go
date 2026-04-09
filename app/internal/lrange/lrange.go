@@ -2,14 +2,13 @@ package lrange
 
 import (
 	"bufio"
-	"net"
 	"strconv"
 
 	"github.com/codecrafters-io/redis-starter-go/app/internal/server"
 	"github.com/codecrafters-io/redis-starter-go/app/internal/utils"
 )
 
-func Lrange(conn net.Conn, tokens []string, writer *bufio.Writer, server *server.RedisServer) {
+func Lrange(writer *bufio.Writer, server *server.RedisServer, tokens []string) {
 	name := tokens[1]
 	start, _ := strconv.Atoi(tokens[2])
 	stop, _ := strconv.Atoi(tokens[3])
