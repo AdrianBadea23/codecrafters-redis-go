@@ -1,4 +1,4 @@
-package internal
+package utils
 
 import (
 	"bufio"
@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/codecrafters-io/redis-starter-go/app/internal/server"
 )
 
 const (
@@ -45,7 +47,7 @@ const (
 	XADD_ID_GREATER_ZERO  = "-ERR The ID specified in XADD must be greater than 0-0\r\n"
 )
 
-func getRangeFromList(listGrid map[string]any, sliceName string, start, stop int) []string {
+func GetRangeFromList(listGrid map[string]any, sliceName string, start, stop int) []string {
 	slice, ok := listGrid[sliceName].([]string)
 
 	if !ok {
@@ -85,7 +87,7 @@ func getRangeFromList(listGrid map[string]any, sliceName string, start, stop int
 	return slice[start : stop+1]
 }
 
-func buildBulkString(writer *bufio.Writer, val string) {
+func BuildBulkString(writer *bufio.Writer, val string) {
 	writer.WriteString(BULK_STRING)
 	writer.WriteString(strconv.Itoa(len(val)))
 	writer.WriteString(RESP_DELIMITER)
@@ -94,7 +96,7 @@ func buildBulkString(writer *bufio.Writer, val string) {
 	writer.Flush()
 }
 
-func stringBuildBulkString(sb *strings.Builder, val string) {
+func StringBuildBulkString(sb *strings.Builder, val string) {
 	sb.WriteString(BULK_STRING)
 	sb.WriteString(strconv.Itoa(len(val)))
 	sb.WriteString(RESP_DELIMITER)
@@ -102,14 +104,14 @@ func stringBuildBulkString(sb *strings.Builder, val string) {
 	sb.WriteString(RESP_DELIMITER)
 }
 
-func buildInteger(writer *bufio.Writer, val int) {
+func BuildInteger(writer *bufio.Writer, val int) {
 	writer.WriteString(INTEGER)
 	writer.WriteString(strconv.Itoa(val))
 	writer.WriteString(RESP_DELIMITER)
 	writer.Flush()
 }
 
-func buildArrayString(slice []string) string {
+func BuildArrayString(slice []string) string {
 	var sb strings.Builder
 	sb.WriteString(ARRAY)
 	sb.WriteString(strconv.Itoa(len(slice)))
@@ -126,7 +128,7 @@ func buildArrayString(slice []string) string {
 	return sb.String()
 }
 
-func addToListGrid(listGrid map[string]any, tokens []string, server *RedisServer) int {
+func AddToListGrid(listGrid map[string]any, tokens []string, server *server.RedisServer) int {
 	_, ok := listGrid[tokens[1]]
 	name := tokens[1]
 
@@ -155,7 +157,7 @@ func addToListGrid(listGrid map[string]any, tokens []string, server *RedisServer
 
 }
 
-func preAddToListGrid(listGrid map[string]any, tokens []string) int {
+func PreAddToListGrid(listGrid map[string]any, tokens []string) int {
 	_, ok := listGrid[tokens[1]]
 
 	if !ok {
@@ -175,7 +177,7 @@ func preAddToListGrid(listGrid map[string]any, tokens []string) int {
 	}
 }
 
-func leftPop(listGrid map[string]any, name string, elements int) []string {
+func LeftPop(listGrid map[string]any, name string, elements int) []string {
 	slice, _ := listGrid[name].([]string)
 
 	sliceToKeep := slice[elements:]
@@ -185,7 +187,7 @@ func leftPop(listGrid map[string]any, name string, elements int) []string {
 	return sliceToDiscard
 }
 
-func getDataType(server *RedisServer, name string) string {
+func GetDataType(server *server.RedisServer, name string) string {
 	_, ok := server.Data[name]
 	_, ok1 := server.Streams[name]
 
@@ -200,7 +202,7 @@ func getDataType(server *RedisServer, name string) string {
 	return NONE
 }
 
-func validateStreamKey(stream map[string][]streamStruct, streamKey, id string) (string, bool) {
+func ValidateStreamKey(stream map[string][]server.StreamStruct, streamKey, id string) (string, bool) {
 	splitString := strings.Split(id, "-")
 	mili, _ := strconv.ParseInt(splitString[0], 10, 64)
 	seq, _ := strconv.ParseInt(splitString[1], 10, 64)
@@ -239,18 +241,18 @@ func validateStreamKey(stream map[string][]streamStruct, streamKey, id string) (
 
 }
 
-func addStreamFullGen(stream map[string][]streamStruct, tokens []string) string {
+func AddStreamFullGen(stream map[string][]server.StreamStruct, tokens []string) string {
 	streamKey := tokens[1]
 
 	_, ok := stream[streamKey]
 
 	if !ok {
-		stream[streamKey] = make([]streamStruct, 0)
+		stream[streamKey] = make([]server.StreamStruct, 0)
 	}
 
 	id := fmt.Sprintf("%d-0", time.Now().UnixMilli())
 
-	aux := streamStruct{
+	aux := server.StreamStruct{
 		ID:     id,
 		Fields: make(map[string]any),
 	}
@@ -264,7 +266,7 @@ func addStreamFullGen(stream map[string][]streamStruct, tokens []string) string 
 	return id
 }
 
-func addStreamPartialGen(stream map[string][]streamStruct, tokens []string) string {
+func AddStreamPartialGen(stream map[string][]server.StreamStruct, tokens []string) string {
 	id := tokens[1]
 	newId := ""
 	var auxMili int64
@@ -273,7 +275,7 @@ func addStreamPartialGen(stream map[string][]streamStruct, tokens []string) stri
 	_, ok := stream[id]
 
 	if !ok {
-		stream[id] = make([]streamStruct, 0)
+		stream[id] = make([]server.StreamStruct, 0)
 		auxMili = 0
 		auxSeq = 0
 	} else {
@@ -299,7 +301,7 @@ func addStreamPartialGen(stream map[string][]streamStruct, tokens []string) stri
 		newId = auxSplitString[0] + "-" + strconv.Itoa(int(auxSeq)+1)
 	}
 
-	aux := streamStruct{
+	aux := server.StreamStruct{
 		ID:     newId,
 		Fields: make(map[string]any),
 	}
@@ -313,16 +315,16 @@ func addStreamPartialGen(stream map[string][]streamStruct, tokens []string) stri
 	return newId
 }
 
-func addStream(stream map[string][]streamStruct, tokens []string) string {
+func AddStream(stream map[string][]server.StreamStruct, tokens []string) string {
 	id := tokens[1]
 
 	_, ok := stream[id]
 
 	if !ok {
-		stream[id] = make([]streamStruct, 0)
+		stream[id] = make([]server.StreamStruct, 0)
 	}
 
-	aux := streamStruct{
+	aux := server.StreamStruct{
 		ID:     tokens[2],
 		Fields: make(map[string]any),
 	}
@@ -336,7 +338,7 @@ func addStream(stream map[string][]streamStruct, tokens []string) string {
 	return tokens[2]
 }
 
-func isInRange(mili, seq, minMili, minSeq, maxMili, maxSeq int64) bool {
+func IsInRange(mili, seq, minMili, minSeq, maxMili, maxSeq int64) bool {
 
 	if mili < minMili {
 		return false
@@ -357,7 +359,7 @@ func isInRange(mili, seq, minMili, minSeq, maxMili, maxSeq int64) bool {
 	return true
 }
 
-func helperForArray(sb *strings.Builder, value streamStruct) {
+func HelperForArray(sb *strings.Builder, value server.StreamStruct) {
 	respTwo := "*2\r\n"
 	sb.WriteString(respTwo)
 	sb.WriteString(BULK_STRING)
@@ -382,7 +384,7 @@ func helperForArray(sb *strings.Builder, value streamStruct) {
 	}
 }
 
-func rangeOverStream(stream map[string][]streamStruct, tokens []string) string {
+func RangeOverStream(stream map[string][]server.StreamStruct, tokens []string) string {
 	slice := stream[tokens[1]]
 	numberOfEles := 0
 
@@ -432,9 +434,9 @@ func rangeOverStream(stream map[string][]streamStruct, tokens []string) string {
 		mili, _ := strconv.ParseInt(split[0], 10, 64)
 		seq, _ := strconv.ParseInt(split[1], 10, 64)
 
-		if isInRange(mili, seq, minMili, minSeq, maxMili, maxSeq) {
+		if IsInRange(mili, seq, minMili, minSeq, maxMili, maxSeq) {
 			numberOfEles++
-			helperForArray(&sb, value)
+			HelperForArray(&sb, value)
 		}
 	}
 
@@ -480,7 +482,7 @@ func preBuildString(sb *strings.Builder, streamKey string) {
 	sb.WriteString("$" + strconv.Itoa(len(streamKey)) + "\r\n" + streamKey + "\r\n")
 }
 
-func queryStream(stream map[string][]streamStruct, streamKey, streamId string) string {
+func queryStream(stream map[string][]server.StreamStruct, streamKey, streamId string) string {
 	slice := stream[streamKey]
 	var sb strings.Builder
 	var fsb strings.Builder
@@ -495,7 +497,7 @@ func queryStream(stream map[string][]streamStruct, streamKey, streamId string) s
 		auxMilis, auxSeq := splitAndReturnInt(val.ID)
 		if isInRangeXread(milis, seq, auxMilis, auxSeq) {
 			numOfEles++
-			helperForArray(&sb, val)
+			HelperForArray(&sb, val)
 		}
 	}
 	fsb.WriteString(ARRAY)
@@ -506,7 +508,7 @@ func queryStream(stream map[string][]streamStruct, streamKey, streamId string) s
 	return fsb.String()
 }
 
-func queryMultipleStreams(stream map[string][]streamStruct, keyPairs []string, idPairs []string) string {
+func QueryMultipleStreams(stream map[string][]server.StreamStruct, keyPairs []string, idPairs []string) string {
 	var sb strings.Builder
 	slice := make([]string, 0)
 
@@ -531,7 +533,7 @@ func queryMultipleStreams(stream map[string][]streamStruct, keyPairs []string, i
 
 }
 
-func makeArraysFromTokens(token []string) ([]string, []string) {
+func MakeArraysFromTokens(token []string) ([]string, []string) {
 	auxSlice := token[2:]
 	length := len(auxSlice) / 2
 	myKeys := make([]string, 0)

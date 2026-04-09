@@ -1,11 +1,11 @@
-package internal
+package parser
 
 import (
 	"bufio"
 	"io"
 )
 
-func bulkString(reader *bufio.Reader) string {
+func BulkString(reader *bufio.Reader) string {
 	length := 0
 	b, _ := reader.ReadByte()
 
@@ -31,13 +31,13 @@ func bulkString(reader *bufio.Reader) string {
 	return string(buff)
 }
 
-func parseString(reader *bufio.Reader) string {
+func ParseString(reader *bufio.Reader) string {
 	reader.ReadByte() // expect +
 	fin, _ := reader.ReadString('\r')
 	return fin[:len(fin)-1]
 }
 
-func arrayParser(reader *bufio.Reader) []string {
+func ArrayParser(reader *bufio.Reader) []string {
 	numInteger := 0
 
 	for {
@@ -54,7 +54,7 @@ func arrayParser(reader *bufio.Reader) []string {
 	args := make([]string, numInteger)
 
 	for i := range numInteger {
-		aux := bulkString(reader)
+		aux := BulkString(reader)
 		args[i] = aux
 	}
 

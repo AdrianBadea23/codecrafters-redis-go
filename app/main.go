@@ -5,16 +5,13 @@ import (
 	"net"
 	"os"
 
-	"github.com/codecrafters-io/redis-starter-go/app/internal"
+	"github.com/codecrafters-io/redis-starter-go/app/internal/response"
+	"github.com/codecrafters-io/redis-starter-go/app/internal/server"
 )
-
-// keyValue := make(map[string]string)
-// keyTimetable := make(map[string]int64)
-// listGrid := make(map[string]any, 100)
 
 func main() {
 
-	server := internal.New()
+	server := server.New()
 
 	listener, err := net.Listen("tcp", "0.0.0.0:6379")
 	if err != nil {
@@ -29,7 +26,7 @@ func main() {
 			os.Exit(1)
 		}
 
-		go internal.HandleConnection(conn, server)
+		go response.HandleConnection(conn, server)
 	}
 
 }
