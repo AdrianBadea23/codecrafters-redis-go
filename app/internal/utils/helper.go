@@ -45,6 +45,7 @@ const (
 	ARRAY                 = "*"
 	XADD_ID_SMALLER_ERROR = "-ERR The ID specified in XADD is equal or smaller than the target stream top item\r\n"
 	XADD_ID_GREATER_ZERO  = "-ERR The ID specified in XADD must be greater than 0-0\r\n"
+	STRINGOK              = "OK"
 )
 
 func GetRangeFromList(listGrid map[string]any, sliceName string, start, stop int) []string {
@@ -137,12 +138,12 @@ func AddToListGrid(listGrid map[string]any, tokens []string, server *server.Redi
 		for i := 2; i < len(tokens); i++ {
 			slice = append(slice, tokens[i])
 		}
-		listGrid[name] = slice // tokens[1] is the name given when inserting in the slice
+		listGrid[name] = slice
 		channelsSlice := server.Channels[name]
 		if len(channelsSlice) > 0 {
 			channelsSlice[0] <- slice[0]
 			channelsSlice = channelsSlice[1:]
-			server.Channels[name] = append(server.Channels[name], channelsSlice...)
+			server.Channels[name] = server.Channels[name][1:]
 		}
 
 		return len(slice)
@@ -237,7 +238,7 @@ func ValidateStreamKey(stream map[string][]server.StreamStruct, streamKey, id st
 		}
 	}
 
-	return "OK", true
+	return STRINGOK, true
 
 }
 
@@ -397,7 +398,6 @@ func RangeOverStream(stream map[string][]server.StreamStruct, tokens []string) s
 	var fsb strings.Builder
 
 	if strings.Contains(tokens[2], "-") {
-
 		if tokens[2] == "-" {
 			minMili = 0
 			minSeq = 1
@@ -406,7 +406,6 @@ func RangeOverStream(stream map[string][]server.StreamStruct, tokens []string) s
 			minMili, _ = strconv.ParseInt(spl[0], 10, 64)
 			minSeq, _ = strconv.ParseInt(spl[1], 10, 64)
 		}
-
 	} else {
 		minMili, _ = strconv.ParseInt(tokens[2], 10, 64)
 		minSeq = 0
@@ -417,7 +416,6 @@ func RangeOverStream(stream map[string][]server.StreamStruct, tokens []string) s
 		maxMili, _ = strconv.ParseInt(spl[0], 10, 64)
 		maxSeq, _ = strconv.ParseInt(spl[1], 10, 64)
 	} else {
-
 		if tokens[3] == "+" {
 			maxMili = math.MaxInt64
 			maxSeq = math.MaxInt64
@@ -425,7 +423,6 @@ func RangeOverStream(stream map[string][]server.StreamStruct, tokens []string) s
 			maxMili, _ = strconv.ParseInt(tokens[3], 10, 64)
 			maxSeq = math.MaxInt64
 		}
-
 	}
 
 	for _, value := range slice {
@@ -470,16 +467,8 @@ func splitAndReturnInt(streamId string) (int64, int64) {
 }
 
 func preBuildString(sb *strings.Builder, streamKey string) {
-	// sb.WriteString(BULK_STRING)
-	// sb.WriteString("1")
-	// sb.WriteString(RESP_DELIMITER)
-	// sb.WriteString(ARRAY)
-	// sb.WriteString("2")
-	// sb.WriteString(RESP_DELIMITER)
-	// stringBuildBulkString(sb, streamKey)
-
 	sb.WriteString("*2\r\n")
-	sb.WriteString("$" + strconv.Itoa(len(streamKey)) + "\r\n" + streamKey + "\r\n")
+	sb.WriteString(BULK_STRING + strconv.Itoa(len(streamKey)) + RESP_DELIMITER + streamKey + RESP_DELIMITER)
 }
 
 func queryStream(stream map[string][]server.StreamStruct, streamKey, streamId string) string {
@@ -491,7 +480,6 @@ func queryStream(stream map[string][]server.StreamStruct, streamKey, streamId st
 	preBuildString(&fsb, streamKey)
 
 	milis, seq := splitAndReturnInt(streamId)
-	// fmt.Println(slice, streamKey, streamId)
 
 	for _, val := range slice {
 		auxMilis, auxSeq := splitAndReturnInt(val.ID)
@@ -527,8 +515,6 @@ func QueryMultipleStreams(stream map[string][]server.StreamStruct, keyPairs []st
 		sb.WriteString(val)
 	}
 
-	// sb.WriteString(RESP_DELIMITER)
-
 	return sb.String()
 
 }
@@ -542,7 +528,6 @@ func MakeArraysFromTokens(token []string) ([]string, []string) {
 	for i := 0; i < length; i++ {
 		myKeys = append(myKeys, auxSlice[i])
 		myIds = append(myIds, auxSlice[i+length])
-		// myMap[auxSlice[i]] = auxSlice[i+length]
 	}
 
 	return myKeys, myIds
